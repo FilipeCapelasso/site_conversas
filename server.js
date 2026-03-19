@@ -11,14 +11,16 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  console.log('Alguém conectou');
-
+  // Escuta a mensagem e reenvia para todos com o ID de quem mandou
   socket.on('chat message', (msg) => {
-    // Envia a mensagem para todos os conectados
-    io.emit('chat message', msg);
+    io.emit('chat message', {
+      text: msg,
+      senderId: socket.id
+    });
   });
 });
 
-server.listen(3000, () => {
-  console.log('Servidor rodando na porta 3000');
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
