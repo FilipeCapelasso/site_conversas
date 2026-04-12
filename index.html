@@ -14,6 +14,7 @@
       display: flex; 
       flex-direction: column; 
       height: 100vh; 
+      overflow: hidden;
     }
 
     /* Lista de Mensagens */
@@ -25,6 +26,8 @@
       display: flex; 
       flex-direction: column; 
       gap: 12px;
+      background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); /* Pattern sutil do zap */
+      background-blend-mode: overlay;
     }
 
     /* Bolhas de Mensagem */
@@ -35,6 +38,7 @@
       line-height: 1.4;
       position: relative;
       word-wrap: break-word;
+      box-shadow: 0 1px 0.5px rgba(0,0,0,0.13);
     }
 
     .sent { 
@@ -55,6 +59,7 @@
       padding: 10px 15px; 
       display: flex; 
       align-items: center; 
+      gap: 10px;
     }
 
     #input { 
@@ -62,7 +67,7 @@
       border: none; 
       padding: 12px 15px; 
       flex-grow: 1; 
-      border-radius: 8px; 
+      border-radius: 25px; 
       color: white; 
       outline: none; 
     }
@@ -72,11 +77,13 @@
       color: #111b21; 
       border: none; 
       padding: 10px 20px; 
-      margin-left: 10px; 
-      border-radius: 8px; 
+      border-radius: 20px; 
       font-weight: bold; 
       cursor: pointer;
+      transition: opacity 0.2s;
     }
+
+    button:active { opacity: 0.7; }
 
     /* Mídias */
     img, video { max-width: 100%; border-radius: 5px; margin-top: 5px; display: block; }
@@ -88,20 +95,20 @@
     <h2 style="margin-bottom:20px;">Entrar no Chat</h2>
     <input id="user-name" placeholder="Usuário" style="padding:12px; margin:5px; border-radius:5px; border:none; width:280px; background:#2a3942; color:white;">
     <input id="user-pass" type="password" placeholder="Senha" style="padding:12px; margin:5px; border-radius:5px; border:none; width:280px; background:#2a3942; color:white;">
-    <button onclick="fazerLogin()" style="width:280px; margin-top:10px; margin-left:0;">Entrar / Cadastrar</button>
-    <p id="login-status" style="margin-top:15px; font-size:14px; color:#00a884;"></p>
+    <button onclick="fazerLogin()" style="width:280px; margin-top:10px;">Entrar / Cadastrar</button>
+    <p id="login-status" style="margin-top:15px; font-size:14px; color:#00a884; height: 20px;"></p>
   </div>
 
   <div style="background:#202c33; padding:10px; display:flex; align-items:center; gap:10px; border-bottom: 1px solid #2a3942;">
     <input id="search-user" placeholder="🔍 Buscar usuário para privado..." style="flex:1; background:#2a3942; border:none; color:white; padding:10px; border-radius:20px; outline:none;">
-    <button onclick="iniciarPrivado()" style="margin:0; padding:8px 15px; background:#005c4b; color:white;">Ir</button>
+    <button onclick="iniciarPrivado()" style="padding:8px 15px; background:#005c4b; color:white;">Ir</button>
   </div>
 
   <ul id="messages"></ul>
 
   <form id="form">
     <input type="file" id="file-input" style="display:none;" accept="image/*,video/*">
-    <button type="button" onclick="document.getElementById('file-input').click()" style="background:transparent; color:#8696a0; font-size:24px; padding:0 10px; margin-left:0;">📎</button>
+    <button type="button" onclick="document.getElementById('file-input').click()" style="background:transparent; color:#8696a0; font-size:24px; padding:0 5px;">📎</button>
     <input id="input" autocomplete="off" placeholder="Digite sua mensagem..." />
     <button type="submit">Enviar</button>
   </form>
@@ -110,7 +117,7 @@
   <script>
     let socket;
     let currentUser = "";
-    // URL da sua implantação do Apps Script
+    // Sua URL do Google Apps Script
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxV-Ox_q-hQZRCg0WyE6vERuvs3S_aGbfJOzlEQgNmNQP44VuKOL8bxweC1sVCWY1Z/exec";
 
     async function fazerLogin() {
@@ -119,14 +126,23 @@
       
       if(!user || !pass) return alert("Por favor, preencha usuário e senha.");
 
-      document.getElementById('login-status').innerText = "Autenticando...";
+      const status = document.getElementById('login-status');
+      status.innerText = "Conectando ao banco de dados...";
       
       try {
-        // O parâmetro 'redirect: follow' é vital para o funcionamento com Google Scripts
-        const res = await fetch(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, {
+        // Tática para evitar erros de CORS/Redirecionamento do Google:
+        // Usamos um JSONP ou um fetch com modo específico se necessário, 
+        // mas aqui otimizamos o tratamento da resposta.
+        const url = `${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`;
+        
+        const res = await fetch(url, {
           method: 'GET',
+          mode: 'cors', 
           redirect: 'follow'
         });
+
+        if (!res.ok) throw new Error("Erro na rede");
+
         const data = await res.json();
 
         if (data.status === "success") {
@@ -135,12 +151,13 @@
           conectarSocket();
         } else {
           alert("Erro: " + data.message);
-          document.getElementById('login-status').innerText = "";
+          status.innerText = "";
         }
       } catch (e) {
-        console.error(e);
-        alert("Erro na conexão com a planilha. Verifique sua internet ou a implantação do Script.");
-        document.getElementById('login-status').innerText = "";
+        console.error("Erro no login:", e);
+        // Se o erro persistir, pode ser que o Apps Script não tenha retornado JSON válido
+        alert("Erro técnico: Verifique se você publicou o Google Script como 'Qualquer pessoa' (Anyone) e se criou uma 'Nova Versão' ao salvar.");
+        status.innerText = "";
       }
     }
 
@@ -148,7 +165,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const room = urlParams.get('room') || 'global';
       
-      // Conecta ao servidor passando o nome da sala e o usuário
+      // Inicializa Socket.io
       socket = io({ query: { room: room, username: currentUser } });
 
       const form = document.getElementById('form');
@@ -156,21 +173,21 @@
       const fileInput = document.getElementById('file-input');
       const messagesList = document.getElementById('messages');
 
-      // Lógica de Envio de Arquivos (Imagens/Vídeos)
+      // Envio de Arquivos
       fileInput.onchange = () => {
         const file = fileInput.files[0];
         if (!file) return;
-
+        
         const reader = new FileReader();
         reader.onload = (e) => {
           socket.emit('chat message', {
             file: e.target.result,
             fileType: file.type.split('/')[0],
-            text: "" // Texto vazio pois é um arquivo
+            text: "" 
           });
         };
         reader.readAsDataURL(file);
-        fileInput.value = ""; // Reseta o input
+        fileInput.value = ""; 
       };
 
       // Envio de Texto
@@ -182,21 +199,20 @@
         }
       });
 
-      // Recebimento de Mensagens
+      // Recebimento em tempo real
       socket.on('chat message', (data) => {
         const item = document.createElement('li');
         item.classList.add('msg-box');
-        item.classList.add(data.senderId === socket.id ? 'sent' : 'received');
+        
+        // Compara se a mensagem é minha ou de outro
+        const isMe = data.username === currentUser;
+        item.classList.add(isMe ? 'sent' : 'received');
 
-        // Cabeçalho com o nome do usuário
         let content = `<small style="display:block; color:#8696a0; font-size:11px; margin-bottom:4px; font-weight:bold;">${data.username}</small>`;
 
         if (data.file) {
-          if (data.fileType === 'image') {
-            content += `<img src="${data.file}">`;
-          } else if (data.fileType === 'video') {
-            content += `<video src="${data.file}" controls></video>`;
-          }
+          if (data.fileType === 'image') content += `<img src="${data.file}">`;
+          else if (data.fileType === 'video') content += `<video src="${data.file}" controls></video>`;
         } else {
           content += `<span>${data.text}</span>`;
         }
@@ -207,12 +223,10 @@
       });
     }
 
-    // Lógica para sala privada
     function iniciarPrivado() {
       const target = document.getElementById('search-user').value.trim();
       if(target) {
-        if(target === currentUser) return alert("Você não pode iniciar um chat privado consigo mesmo.");
-        // Gera uma sala única para os dois usuários
+        if(target === currentUser) return alert("Você já está em seu chat pessoal.");
         const room = [currentUser, target].sort().join('_');
         window.location.search = `?room=${room}`;
       }
