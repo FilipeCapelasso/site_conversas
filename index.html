@@ -1,22 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Privado</title>
+  <style>
+    /* Estilos Base */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+      background: #0b141a; 
+      color: #e9edef; 
+      display: flex; 
+      flex-direction: column; 
+      height: 100vh; 
+    }
+
+    /* Lista de Mensagens */
+    #messages { 
+      list-style-type: none; 
+      flex-grow: 1; 
+      overflow-y: auto; 
+      padding: 20px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 12px;
+    }
+
+    /* Bolhas de Mensagem */
+    .msg-box { 
+      max-width: 75%; 
+      padding: 8px 12px; 
+      font-size: 15px; 
+      line-height: 1.4;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .sent { 
+      align-self: flex-end; 
+      background-color: #005c4b; 
+      border-radius: 10px 10px 0 10px; 
+    }
+
+    .received { 
+      align-self: flex-start; 
+      background-color: #202c33; 
+      border-radius: 10px 10px 10px 0; 
+    }
+
+    /* Área de Input */
+    #form { 
+      background: #202c33; 
+      padding: 10px 15px; 
+      display: flex; 
+      align-items: center; 
+    }
+
+    #input { 
+      background: #2a3942; 
+      border: none; 
+      padding: 12px 15px; 
+      flex-grow: 1; 
+      border-radius: 8px; 
+      color: white; 
+      outline: none; 
+    }
+
+    button { 
+      background: #00a884; 
+      color: #111b21; 
+      border: none; 
+      padding: 10px 20px; 
+      margin-left: 10px; 
+      border-radius: 8px; 
+      font-weight: bold; 
+      cursor: pointer;
+    }
+
+    /* Mídias */
+    img, video { max-width: 100%; border-radius: 5px; margin-top: 5px; display: block; }
+  </style>
+</head>
 <body>
+
   <div id="login-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#0b141a; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:100;">
     <h2 style="margin-bottom:20px;">Entrar no Chat</h2>
-    <input id="user-name" placeholder="Usuário" style="padding:10px; margin:5px; border-radius:5px; border:none; width:250px;">
-    <input id="user-pass" type="password" placeholder="Senha" style="padding:10px; margin:5px; border-radius:5px; border:none; width:250px;">
-    <button onclick="fazerLogin()">Entrar / Cadastrar</button>
-    <p id="login-status" style="margin-top:10px; font-size:12px; color:#00a884;"></p>
+    <input id="user-name" placeholder="Usuário" style="padding:12px; margin:5px; border-radius:5px; border:none; width:280px; background:#2a3942; color:white;">
+    <input id="user-pass" type="password" placeholder="Senha" style="padding:12px; margin:5px; border-radius:5px; border:none; width:280px; background:#2a3942; color:white;">
+    <button onclick="fazerLogin()" style="width:280px; margin-top:10px; margin-left:0;">Entrar / Cadastrar</button>
+    <p id="login-status" style="margin-top:15px; font-size:14px; color:#00a884;"></p>
   </div>
 
-  <div style="background:#202c33; padding:10px; display:flex; align-items:center; gap:10px;">
-    <input id="search-user" placeholder="🔍 Buscar usuário..." style="flex:1; background:#2a3942; border:none; color:white; padding:8px; border-radius:20px;">
-    <button onclick="iniciarPrivado()" style="margin:0; padding:5px 15px;">Ir</button>
+  <div style="background:#202c33; padding:10px; display:flex; align-items:center; gap:10px; border-bottom: 1px solid #2a3942;">
+    <input id="search-user" placeholder="🔍 Buscar usuário para privado..." style="flex:1; background:#2a3942; border:none; color:white; padding:10px; border-radius:20px; outline:none;">
+    <button onclick="iniciarPrivado()" style="margin:0; padding:8px 15px; background:#005c4b; color:white;">Ir</button>
   </div>
 
   <ul id="messages"></ul>
 
   <form id="form">
     <input type="file" id="file-input" style="display:none;" accept="image/*,video/*">
-    <button type="button" onclick="document.getElementById('file-input').click()" style="background:transparent; color:#8696a0; font-size:24px; padding:0 10px;">📎</button>
+    <button type="button" onclick="document.getElementById('file-input').click()" style="background:transparent; color:#8696a0; font-size:24px; padding:0 10px; margin-left:0;">📎</button>
     <input id="input" autocomplete="off" placeholder="Digite sua mensagem..." />
     <button type="submit">Enviar</button>
   </form>
@@ -25,17 +110,23 @@
   <script>
     let socket;
     let currentUser = "";
+    // URL da sua implantação do Apps Script
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxV-Ox_q-hQZRCg0WyE6vERuvs3S_aGbfJOzlEQgNmNQP44VuKOL8bxweC1sVCWY1Z/exec";
 
     async function fazerLogin() {
-      const user = document.getElementById('user-name').value;
-      const pass = document.getElementById('user-pass').value;
-      if(!user || !pass) return alert("Preencha tudo!");
+      const user = document.getElementById('user-name').value.trim();
+      const pass = document.getElementById('user-pass').value.trim();
+      
+      if(!user || !pass) return alert("Por favor, preencha usuário e senha.");
 
-      document.getElementById('login-status').innerText = "Verificando...";
+      document.getElementById('login-status').innerText = "Autenticando...";
       
       try {
-        const res = await fetch(`${SCRIPT_URL}?user=${user}&pass=${pass}`);
+        // O parâmetro 'redirect: follow' é vital para o funcionamento com Google Scripts
+        const res = await fetch(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, {
+          method: 'GET',
+          redirect: 'follow'
+        });
         const data = await res.json();
 
         if (data.status === "success") {
@@ -47,7 +138,9 @@
           document.getElementById('login-status').innerText = "";
         }
       } catch (e) {
-        alert("Erro na conexão com a planilha.");
+        console.error(e);
+        alert("Erro na conexão com a planilha. Verifique sua internet ou a implantação do Script.");
+        document.getElementById('login-status').innerText = "";
       }
     }
 
@@ -55,6 +148,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const room = urlParams.get('room') || 'global';
       
+      // Conecta ao servidor passando o nome da sala e o usuário
       socket = io({ query: { room: room, username: currentUser } });
 
       const form = document.getElementById('form');
@@ -62,20 +156,24 @@
       const fileInput = document.getElementById('file-input');
       const messagesList = document.getElementById('messages');
 
-      // Envio de arquivos
+      // Lógica de Envio de Arquivos (Imagens/Vídeos)
       fileInput.onchange = () => {
         const file = fileInput.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
         reader.onload = (e) => {
           socket.emit('chat message', {
             file: e.target.result,
             fileType: file.type.split('/')[0],
-            text: `Enviou um(a) ${file.type.split('/')[0]}`
+            text: "" // Texto vazio pois é um arquivo
           });
         };
         reader.readAsDataURL(file);
+        fileInput.value = ""; // Reseta o input
       };
 
+      // Envio de Texto
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         if (input.value.trim()) {
@@ -84,17 +182,21 @@
         }
       });
 
+      // Recebimento de Mensagens
       socket.on('chat message', (data) => {
         const item = document.createElement('li');
         item.classList.add('msg-box');
         item.classList.add(data.senderId === socket.id ? 'sent' : 'received');
 
-        // Adiciona nome do usuário em cima
-        let content = `<small style="display:block; color:#8696a0; font-size:10px; margin-bottom:4px;">${data.username}</small>`;
+        // Cabeçalho com o nome do usuário
+        let content = `<small style="display:block; color:#8696a0; font-size:11px; margin-bottom:4px; font-weight:bold;">${data.username}</small>`;
 
         if (data.file) {
-          if (data.fileType === 'image') content += `<img src="${data.file}" style="max-width:100%; border-radius:5px;">`;
-          else if (data.fileType === 'video') content += `<video src="${data.file}" controls style="max-width:100%; border-radius:5px;"></video>`;
+          if (data.fileType === 'image') {
+            content += `<img src="${data.file}">`;
+          } else if (data.fileType === 'video') {
+            content += `<video src="${data.file}" controls></video>`;
+          }
         } else {
           content += `<span>${data.text}</span>`;
         }
@@ -105,13 +207,16 @@
       });
     }
 
+    // Lógica para sala privada
     function iniciarPrivado() {
-      const target = document.getElementById('search-user').value;
+      const target = document.getElementById('search-user').value.trim();
       if(target) {
-        // Cria uma sala única baseada nos dois nomes em ordem alfabética
+        if(target === currentUser) return alert("Você não pode iniciar um chat privado consigo mesmo.");
+        // Gera uma sala única para os dois usuários
         const room = [currentUser, target].sort().join('_');
         window.location.search = `?room=${room}`;
       }
     }
   </script>
 </body>
+</html>
