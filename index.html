@@ -26,7 +26,7 @@
       display: flex; 
       flex-direction: column; 
       gap: 12px;
-      background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); /* Pattern sutil do zap */
+      background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
       background-blend-mode: overlay;
     }
 
@@ -117,8 +117,9 @@
   <script>
     let socket;
     let currentUser = "";
-    // Sua URL do Google Apps Script
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxV-Ox_q-hQZRCg0WyE6vERuvs3S_aGbfJOzlEQgNmNQP44VuKOL8bxweC1sVCWY1Z/exec";
+    
+    // NOVO CÓDIGO DE IMPLANTAÇÃO APLICADO
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwPcfxf9Lr2-4-0ozeD7CAsa2soVuBO99PQNT-mZk81WaXwK1GwOIrZkBUoNyv-SGwt/exec";
 
     async function fazerLogin() {
       const user = document.getElementById('user-name').value.trim();
@@ -130,18 +131,15 @@
       status.innerText = "Conectando ao banco de dados...";
       
       try {
-        // Tática para evitar erros de CORS/Redirecionamento do Google:
-        // Usamos um JSONP ou um fetch com modo específico se necessário, 
-        // mas aqui otimizamos o tratamento da resposta.
         const url = `${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`;
         
+        // Google exige 'redirect: follow' para funcionar corretamente com fetch
         const res = await fetch(url, {
           method: 'GET',
-          mode: 'cors', 
           redirect: 'follow'
         });
 
-        if (!res.ok) throw new Error("Erro na rede");
+        if (!res.ok) throw new Error("Falha na resposta do servidor.");
 
         const data = await res.json();
 
@@ -155,8 +153,7 @@
         }
       } catch (e) {
         console.error("Erro no login:", e);
-        // Se o erro persistir, pode ser que o Apps Script não tenha retornado JSON válido
-        alert("Erro técnico: Verifique se você publicou o Google Script como 'Qualquer pessoa' (Anyone) e se criou uma 'Nova Versão' ao salvar.");
+        alert("Erro de conexão com a planilha. Verifique se publicou como 'Qualquer pessoa' e usou a URL correta.");
         status.innerText = "";
       }
     }
@@ -165,7 +162,6 @@
       const urlParams = new URLSearchParams(window.location.search);
       const room = urlParams.get('room') || 'global';
       
-      // Inicializa Socket.io
       socket = io({ query: { room: room, username: currentUser } });
 
       const form = document.getElementById('form');
@@ -173,7 +169,6 @@
       const fileInput = document.getElementById('file-input');
       const messagesList = document.getElementById('messages');
 
-      // Envio de Arquivos
       fileInput.onchange = () => {
         const file = fileInput.files[0];
         if (!file) return;
@@ -190,7 +185,6 @@
         fileInput.value = ""; 
       };
 
-      // Envio de Texto
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         if (input.value.trim()) {
@@ -199,12 +193,10 @@
         }
       });
 
-      // Recebimento em tempo real
       socket.on('chat message', (data) => {
         const item = document.createElement('li');
         item.classList.add('msg-box');
         
-        // Compara se a mensagem é minha ou de outro
         const isMe = data.username === currentUser;
         item.classList.add(isMe ? 'sent' : 'received');
 
@@ -226,7 +218,7 @@
     function iniciarPrivado() {
       const target = document.getElementById('search-user').value.trim();
       if(target) {
-        if(target === currentUser) return alert("Você já está em seu chat pessoal.");
+        if(target === currentUser) return alert("Você já está no seu chat pessoal.");
         const room = [currentUser, target].sort().join('_');
         window.location.search = `?room=${room}`;
       }
