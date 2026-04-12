@@ -4,9 +4,12 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
 
-// STEALH: Remove o header que indica o uso de Express
+// Aumentando o limite para 100MB para aguentar vídeos em Base64
+const io = new Server(server, {
+  maxHttpBufferSize: 1e8 
+});
+
 app.disable('x-powered-by');
 
 app.get('/', (req, res) => {
@@ -14,19 +17,22 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-  // Pega o nome da sala da query da URL (ex: ?room=minha-sala)
   const room = socket.handshake.query.room || 'global';
+  const username = socket.handshake.query.username || 'Anônimo';
+  
   socket.join(room);
 
-  socket.on('chat message', (msg) => {
-    // Envia apenas para os membros daquela sala específica
+  socket.on('chat message', (data) => {
+    // Agora o dado pode ser texto ou um objeto com arquivo
     io.to(room).emit('chat message', {
-      text: msg,
-      senderId: socket.id
+      text: data.text || data,
+      file: data.file || null,
+      fileType: data.fileType || null,
+      senderId: socket.id,
+      username: username // Envia o nome de quem mandou
     });
   });
 
-  // Comando de Ping (calcula o tempo de resposta)
   socket.on('ping-test', (startTime) => {
     socket.emit('pong-test', startTime);
   });
