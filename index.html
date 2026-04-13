@@ -8,7 +8,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #0b141a; color: #e9edef; display: flex; height: 100vh; overflow: hidden; }
     
-    /* Sidebar Estilo WhatsApp */
+    /* Sidebar */
     #sidebar { width: 320px; background: #111b21; border-right: 1px solid #2a3942; display: flex; flex-direction: column; }
     .sidebar-header { padding: 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
     
@@ -18,41 +18,39 @@
     #suggestions li { padding: 12px; cursor: pointer; border-bottom: 1px solid #3b4a54; }
     #suggestions li:hover { background: #3b4a54; }
 
-    /* Seção de Conversas Salvas */
     .section-title { padding: 15px 15px 5px 15px; font-size: 12px; color: #00a884; text-transform: uppercase; letter-spacing: 1px; }
     #contacts-list { flex: 1; overflow-y: auto; }
     .contact-item { padding: 15px; cursor: pointer; border-bottom: 1px solid #202c33; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
     .contact-item:hover { background: #202c33; }
     .contact-item.active { background: #2a3942; border-left: 4px solid #00a884; }
 
-    /* Área do Chat */
+    /* Chat Area */
     #chat-area { flex: 1; display: flex; flex-direction: column; position: relative; }
     #chat-header { padding: 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3942; }
-    #messages { flex: 1; overflow-y: auto; padding: 20px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; background-color: #0b141a; display: flex; flex-direction: column; gap: 10px; }
+    #messages { flex: 1; overflow-y: auto; padding: 20px; background-color: #0b141a; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); background-blend-mode: overlay; display: flex; flex-direction: column; gap: 10px; }
     
-    /* Bolhas */
-    .msg-box { max-width: 75%; padding: 8px 12px; font-size: 15px; border-radius: 10px; line-height: 1.4; position: relative; }
+    .msg-box { max-width: 75%; padding: 8px 12px; font-size: 15px; border-radius: 10px; line-height: 1.4; }
     .sent { align-self: flex-end; background: #005c4b; border-bottom-right-radius: 0; }
     .received { align-self: flex-start; background: #202c33; border-bottom-left-radius: 0; }
     img, video { max-width: 100%; border-radius: 5px; margin-top: 5px; }
 
-    /* Footer / Input */
+    /* Footer */
     #form { background: #202c33; padding: 10px 15px; display: flex; align-items: center; gap: 10px; }
     #input { flex: 1; background: #2a3942; border: none; padding: 12px; border-radius: 25px; color: white; outline: none; }
-    .btn-icon { background: transparent; border: none; color: #8696a0; cursor: pointer; font-size: 24px; padding: 5px; }
+    .btn-icon { background: transparent; border: none; color: #8696a0; cursor: pointer; font-size: 24px; }
     .btn-send { background: #00a884; color: #111b21; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
-    /* Login */
+    /* Login Screen */
     #login-screen { position: fixed; inset: 0; background: #0b141a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-    input[type="text"], input[type="password"] { padding: 12px; margin: 5px; width: 280px; border-radius: 5px; border: none; background: #2a3942; color: white; }
+    .login-input { padding: 12px; margin: 5px; width: 280px; border-radius: 5px; border: none; background: #2a3942; color: white; }
   </style>
 </head>
 <body>
 
   <div id="login-screen">
-    <h2>Entrar no Chat</h2>
-    <input id="user-name" type="text" placeholder="Usuário">
-    <input id="user-pass" type="password" placeholder="Senha">
+    <h2 style="margin-bottom: 20px;">Entrar no Chat</h2>
+    <input id="user-name" class="login-input" type="text" placeholder="Usuário">
+    <input id="user-pass" class="login-input" type="password" placeholder="Senha">
     <button onclick="fazerLogin()" class="btn-send" style="width:280px; margin-top:10px;">Entrar / Cadastrar</button>
     <p id="login-status" style="margin-top:10px; color:#00a884;"></p>
   </div>
@@ -60,21 +58,20 @@
   <div id="sidebar">
     <div class="sidebar-header">
       <span>Conversas</span>
-      <button onclick="logout()" style="background:none; border:none; color:#ea0038; cursor:pointer; font-size:12px;">SAIR</button>
+      <button onclick="logout()" style="background:none; border:none; color:#ea0038; cursor:pointer; font-size:11px; font-weight:bold;">SAIR</button>
     </div>
     
     <div id="search-box">
-      <input id="search-user" placeholder="🔍 Buscar usuário..." oninput="buscarUsuariosSugestao()">
+      <input id="search-user" placeholder="🔍 Buscar usuário para conversar..." oninput="buscarUsuariosSugestao()">
       <ul id="suggestions"></ul>
     </div>
 
     <div class="contact-item" onclick="mudarSala('global')" id="item-global">
-      <span style="font-size:20px;">🌎</span> Chat Global
+      <span style="font-size:18px;">🌎</span> Chat Global
     </div>
 
     <div class="section-title">Contatos Recentes</div>
-    <div id="contacts-list">
-      </div>
+    <div id="contacts-list"></div>
   </div>
 
   <div id="chat-area">
@@ -97,13 +94,12 @@
   <script>
     let socket;
     let currentUser = "";
+    // Cole aqui sua URL do Google Apps Script
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxV-Ox_q-hQZRCg0WyE6VRuvs3S_aGbfJOzleQgNmNQP44VuKOL8bxweC1sVCWY1Z";
 
-    // 1. Inicialização e Persistência
-    window.onload = async () => {
+    window.onload = () => {
       const savedUser = localStorage.getItem('chat_user');
       const savedPass = localStorage.getItem('chat_pass');
-
       if (savedUser && savedPass) {
         currentUser = savedUser;
         document.getElementById('login-screen').style.display = 'none';
@@ -117,17 +113,21 @@
       const pass = document.getElementById('user-pass').value.trim();
       if(!user || !pass) return;
 
-      document.getElementById('login-status').innerText = "Autenticando...";
-      const res = await fetch(`${SCRIPT_URL}?user=${user}&pass=${pass}`, { redirect: 'follow' });
-      const data = await res.json();
+      document.getElementById('login-status').innerText = "Verificando...";
+      try {
+        const res = await fetch(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, { redirect: 'follow' });
+        const data = await res.json();
 
-      if (data.status === "success") {
-        localStorage.setItem('chat_user', user);
-        localStorage.setItem('chat_pass', pass);
-        location.reload();
-      } else {
-        alert(data.message);
-        document.getElementById('login-status').innerText = "";
+        if (data.status === "success") {
+          localStorage.setItem('chat_user', user);
+          localStorage.setItem('chat_pass', pass);
+          location.reload();
+        } else {
+          alert(data.message || "Erro no login");
+          document.getElementById('login-status').innerText = "";
+        }
+      } catch (e) {
+        alert("Erro de conexão com o servidor de cadastro.");
       }
     }
 
@@ -136,8 +136,8 @@
       location.reload();
     }
 
-    // 2. Lógica de Sidebar e Conversas Salvas
-    function salvarContato(nome) {
+    // Gerenciamento de Sidebar
+    function salvarNovoContato(nome) {
       if (nome === "global" || !nome) return;
       let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
       if (!contatos.includes(nome)) {
@@ -153,22 +153,24 @@
       const urlParams = new URLSearchParams(window.location.search);
       const targetAtual = urlParams.get('target');
 
+      document.getElementById('item-global').className = (!targetAtual) ? "contact-item active" : "contact-item";
+
       lista.innerHTML = contatos.map(nome => `
         <div class="contact-item ${targetAtual === nome ? 'active' : ''}" onclick="mudarSala('${[currentUser, nome].sort().join('_')}', '${nome}')">
-          <div style="width:40px; height:40px; background:#3b4a54; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">${nome[0].toUpperCase()}</div>
+          <div style="width:36px; height:36px; background:#3b4a54; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:14px;">${nome[0].toUpperCase()}</div>
           ${nome}
         </div>
       `).join('');
     }
 
     function mudarSala(novaSala, target = null) {
-      if (target) salvarContato(target);
+      if (target) salvarNovoContato(target);
       const novaUrl = target ? `?room=${novaSala}&target=${target}` : window.location.pathname;
       window.history.pushState({}, '', novaUrl);
       iniciarChat();
     }
 
-    // 3. Socket e Chat
+    // Funções de Chat
     function iniciarChat() {
       if (socket) socket.disconnect();
       
@@ -185,18 +187,19 @@
 
       socket.on('chat message', (data) => {
         const item = document.createElement('li');
-        item.className = `msg-box ${data.username === currentUser ? 'sent' : 'received'}`;
+        const isMe = data.username === currentUser;
+        item.className = `msg-box ${isMe ? 'sent' : 'received'}`;
         
-        let content = `<small style="display:block; font-weight:bold; opacity:0.6; margin-bottom:4px;">${data.username}</small>`;
+        let html = `<small style="display:block; font-weight:bold; opacity:0.6; margin-bottom:4px;">${data.username}</small>`;
         
         if (data.file) {
-          if (data.fileType === 'image') content += `<img src="${data.file}">`;
-          else if (data.fileType === 'video') content += `<video src="${data.file}" controls></video>`;
+          if (data.fileType === 'image') html += `<img src="${data.file}">`;
+          else if (data.fileType === 'video') html += `<video src="${data.file}" controls></video>`;
         } else {
-          content += `<span>${data.text}</span>`;
+          html += `<span>${data.text}</span>`;
         }
 
-        item.innerHTML = content;
+        item.innerHTML = html;
         document.getElementById('messages').appendChild(item);
         document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
       });
@@ -204,22 +207,27 @@
       socket.on('clear messages', () => { document.getElementById('messages').innerHTML = ""; });
     }
 
-    // 4. Busca e Arquivos
+    // Busca de usuários no Google Script
     async function buscarUsuariosSugestao() {
       const query = document.getElementById('search-user').value.trim();
       const sugList = document.getElementById('suggestions');
       if (query.length < 1) { sugList.style.display = "none"; return; }
 
-      const res = await fetch(`${SCRIPT_URL}?action=buscarUsuarios&query=${encodeURIComponent(query)}`, { redirect: 'follow' });
-      const data = await res.json();
-      if(data.data) {
-        sugList.innerHTML = data.data
-          .filter(u => u !== currentUser)
-          .map(u => `<li onclick="mudarSala('${[currentUser, u].sort().join('_')}', '${u}')">${u}</li>`).join('');
-        sugList.style.display = "block";
-      }
+      try {
+        const res = await fetch(`${SCRIPT_URL}?action=buscarUsuarios&query=${encodeURIComponent(query)}`, { redirect: 'follow' });
+        const data = await res.json();
+        if(data.data && data.data.length > 0) {
+          sugList.innerHTML = data.data
+            .filter(u => u.toLowerCase() !== currentUser.toLowerCase())
+            .map(u => `<li onclick="mudarSala('${[currentUser, u].sort().join('_')}', '${u}')">👤 ${u}</li>`).join('');
+          sugList.style.display = "block";
+        } else {
+          sugList.style.display = "none";
+        }
+      } catch(e) { console.error("Erro na busca"); }
     }
 
+    // Envio de Arquivos
     document.getElementById('file-input').onchange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -241,10 +249,15 @@
 
     function apagarHistoricoParaAmbos() {
       const room = new URLSearchParams(window.location.search).get('room');
-      if(room && confirm("Apagar histórico para ambos?")) socket.emit('request clear', room);
+      if(room && confirm("Isso apagará a conversa para ambos permanentemente. Continuar?")) {
+        socket.emit('request clear', room);
+      }
     }
 
-    document.addEventListener('click', (e) => { if(!e.target.closest('#search-box')) document.getElementById('suggestions').style.display = 'none'; });
+    // Fechar sugestões ao clicar fora
+    document.addEventListener('click', (e) => {
+      if(!e.target.closest('#search-box')) document.getElementById('suggestions').style.display = 'none';
+    });
   </script>
 </body>
 </html>
