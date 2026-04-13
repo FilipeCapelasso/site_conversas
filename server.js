@@ -4,28 +4,18 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  maxHttpBufferSize: 1e8 // 100MB
-});
+const io = new Server(server, { maxHttpBufferSize: 1e8 });
 
 app.disable('x-powered-by');
-
-// Mapeamento global de usuários online
 const usersOnline = {};
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 
 io.on('connection', (socket) => {
   const room = socket.handshake.query.room || 'global';
   const username = socket.handshake.query.username || 'Anônimo';
   
-  // Registra o socket do usuário
-  if (username !== 'Anônimo') {
-    usersOnline[username] = socket.id;
-  }
-
+  if (username !== 'Anônimo') usersOnline[username] = socket.id;
   socket.join(room);
 
   socket.on('chat message', (data) => {
@@ -34,42 +24,30 @@ io.on('connection', (socket) => {
       file: data.file || null,
       fileType: data.fileType || null,
       username: username,
-      room: room
+      room: room,
+      isSystem: data.isSystem || false // Identifica mensagens automáticas
     };
 
-    // 1. Envia para quem já está na sala
     io.to(room).emit('chat message', messageData);
 
-    // 2. Notificação Global (para chats privados)
     if (room.includes('_')) {
-      const partes = room.split('_');
-      const destinatario = partes.find(name => name !== username);
-      
-      // Se o destinatário estiver online, envia notificação direta para o socket dele
+      const destinatario = room.split('_').find(name => name !== username);
       const targetSocketId = usersOnline[destinatario];
       if (targetSocketId) {
         io.to(targetSocketId).emit('notify contact', {
           to: destinatario,
           from: username,
-          room: room // Envia a sala para o destinatário saber onde entrar
+          room: room
         });
       }
     }
   });
 
-  socket.on('request clear', (roomToDelete) => {
-    io.to(roomToDelete).emit('clear messages');
-  });
+  socket.on('request clear', (roomToDelete) => io.to(roomToDelete).emit('clear messages'));
 
   socket.on('disconnect', () => {
-    if (usersOnline[username] === socket.id) {
-      delete usersOnline[username];
-    }
-    socket.leave(room);
+    if (usersOnline[username] === socket.id) delete usersOnline[username];
   });
 });
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
-});
+server.listen(process.env.PORT || 3000, '0.0.0.0');
