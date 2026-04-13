@@ -22,15 +22,30 @@ io.on('connection', (socket) => {
   socket.join(room);
 
   socket.on('chat message', (data) => {
-    io.to(room).emit('chat message', {
+    const messageData = {
       text: data.text || "",
       file: data.file || null,
       fileType: data.fileType || null,
-      username: username
-    });
+      username: username,
+      room: room
+    };
+
+    // 1. Envia para quem está na sala aberta
+    io.to(room).emit('chat message', messageData);
+
+    // 2. Lógica de Notificação para o destinatário (fora da sala)
+    if (room.includes('_')) {
+      const partes = room.split('_');
+      const destinatario = partes.find(name => name !== username);
+      
+      // Envia um alerta para o destinatário adicionar o contato à lista
+      io.emit('notify contact', {
+        to: destinatario,
+        from: username
+      });
+    }
   });
 
-  // Evento para apagar o histórico de ambos em tempo real
   socket.on('request clear', (roomToDelete) => {
     io.to(roomToDelete).emit('clear messages');
   });
@@ -43,33 +58,4 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Servidor rodando na porta ${PORT}`);
-});
-// Adicione/Atualize isso no seu server.js
-socket.on('chat message', (data) => {
-  const room = socket.handshake.query.room;
-  const username = socket.handshake.query.username;
-
-  const messageData = {
-    username: username,
-    text: data.text,
-    file: data.file,
-    fileType: data.fileType,
-    room: room
-  };
-
-  // Envia para a sala atual
-  io.to(room).emit('chat message', messageData);
-
-  // LÓGICA DE NOTIFICAÇÃO:
-  // Se for uma sala privada (nome_nome), avisa o destinatário
-  if (room.includes('_')) {
-    const partes = room.split('_');
-    const destinatario = partes.find(name => name !== username);
-    
-    // Envia um evento global para o destinatário salvar o contato
-    io.emit('notify contact', {
-      to: destinatario,
-      from: username
-    });
-  }
 });
