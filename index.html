@@ -207,17 +207,17 @@
   </div>
 
   <div id="login-screen">
-    <h1 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); margin-bottom: 30px; letter-spacing: 5px;">SYSTEM ACCESS</h1>
-    <input id="user-name" class="login-input" type="text" placeholder="USER ID" autocomplete="off">
-    <input id="user-pass" class="login-input" type="password" placeholder="ACCESS KEY">
-    <button onclick="fazerLogin()" class="btn-send" style="height: 50px; width: 300px; margin-top: 20px;">INITIALIZE</button>
+    <h1 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); margin-bottom: 30px; letter-spacing: 5px;">ACESSO AO SISTEMA</h1>
+    <input id="user-name" class="login-input" type="text" placeholder="ID DE USUÁRIO" autocomplete="off">
+    <input id="user-pass" class="login-input" type="password" placeholder="CHAVE DE ACESSO">
+    <button onclick="fazerLogin()" class="btn-send" style="height: 50px; width: 300px; margin-top: 20px;">INICIALIZAR</button>
     <p id="login-status" style="margin-top:15px; color: var(--neon-cyan); font-size: 12px;"></p>
   </div>
 
   <div id="sidebar">
     <div class="sidebar-header">
       <span style="color: var(--neon-cyan); font-weight: bold; letter-spacing: 2px;">TERMINAL</span>
-      <button onclick="logout()" style="background:none; border:1px solid var(--neon-cyan); color:var(--neon-cyan); padding: 4px 8px; cursor:pointer; font-size:10px; text-transform: uppercase;">DISCONNECT</button>
+      <button onclick="logout()" style="background:none; border:1px solid var(--neon-cyan); color:var(--neon-cyan); padding: 4px 8px; cursor:pointer; font-size:10px; text-transform: uppercase;">DESCONECTAR</button>
     </div>
     <div id="search-box">
       <input id="search-user" placeholder="BUSCAR USUÁRIO..." oninput="buscarUsuariosSugestao()" autocomplete="off">
@@ -226,7 +226,7 @@
     <div class="contact-item" onclick="mudarSala('global')" id="item-global">
       <span style="color: var(--neon-cyan); font-weight: bold;">#</span> CHAT GLOBAL
     </div>
-    <div class="section-title">RECENT_UPLOADS</div>
+    <div class="section-title">UPLOADS_RECENTES</div>
     <div id="contacts-list"></div>
   </div>
 
@@ -234,25 +234,24 @@
     <div id="chat-header">
       <div style="display:flex; align-items:center;">
         <button id="back-btn" onclick="fecharChatNoCelular()" style="background:none; border:none; color:var(--neon-cyan); font-size:20px; margin-right:10px; cursor:pointer;">&lt;</button>
-        <span id="chat-title" style="color: var(--neon-cyan); font-weight: bold; letter-spacing: 1px;">WAITING...</span>
+        <span id="chat-title" style="color: var(--neon-cyan); font-weight: bold; letter-spacing: 1px;">AGUARDANDO...</span>
       </div>
       <div class="header-actions">
         <button id="remove-contact-btn" style="display:none; background:transparent; color: #888; border:1px solid #444; padding:5px 10px; cursor:pointer; margin-right:5px; font-size: 10px;" onclick="removerContatoLocal()">Remover</button>
-        <button id="del-btn" style="display:none; background:transparent; color: var(--neon-cyan); border:1px solid var(--neon-cyan); padding:5px 10px; cursor:pointer; font-size: 10px;" onclick="apagarHistoricoParaAmbos()">WIPE DATA</button>
+        <button id="del-btn" style="display:none; background:transparent; color: var(--neon-cyan); border:1px solid var(--neon-cyan); padding:5px 10px; cursor:pointer; font-size: 10px;" onclick="apagarHistoricoParaAmbos()">APAGAR TUDO</button>
       </div>
     </div>
     <ul id="messages"></ul>
     <form id="form">
       <input type="file" id="file-input" style="display:none;" accept="image/*,video/*">
       <button type="button" style="background:none; border:none; font-size:24px; color:var(--neon-cyan); cursor:pointer;" onclick="document.getElementById('file-input').click()">+</button>
-      <input id="input" autocomplete="off" placeholder="Type a message..." />
-      <button type="submit" class="btn-send">SEND</button>
+      <input id="input" autocomplete="off" placeholder="Digite uma mensagem..." />
+      <button type="submit" class="btn-send">ENVIAR</button>
     </form>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    // Lógica JavaScript preservada e funcional
     let socket;
     let currentUser = "";
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyNgvP69t-velhggxX_L2Nu5WreTDAcWW9w27xWRoDwFfjcd_oR2Pdx81KzZCYMRWA/exec";
@@ -287,7 +286,7 @@
       const user = document.getElementById('user-name').value.trim();
       const pass = document.getElementById('user-pass').value.trim();
       if(!user || !pass) return;
-      document.getElementById('login-status').innerText = "CONNECTING...";
+      document.getElementById('login-status').innerText = "CONECTANDO...";
       try {
         const res = await fetch(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, { redirect: 'follow' });
         const data = await res.json();
@@ -302,7 +301,7 @@
         }
       } catch (e) {
         playErrorBeep();
-        alert("CON_ERROR");
+        alert("ERRO_DE_CONEXÃO");
       }
     }
 
@@ -392,7 +391,7 @@
       if (autoPing && target) {
         setTimeout(() => {
           if (socket && socket.connected) {
-            socket.emit('chat message', { text: `ACCESS_GRANTED: ${currentUser} entrou.`, isSystem: true });
+            socket.emit('chat message', { text: `ACESSO_PERMITIDO: ${currentUser} entrou no canal.`, isSystem: true });
           }
         }, 600);
       }
@@ -434,7 +433,7 @@
 
     function removerContatoLocal() {
       const target = new URLSearchParams(window.location.search).get('target');
-      if (!target || !confirm(`DELETAR ${target} DA LISTA RECENTE?`)) return;
+      if (!target || !confirm(`REMOVER ${target} DA LISTA RECENTE?`)) return;
       let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]").filter(n => n !== target);
       localStorage.setItem('chat_recentes', JSON.stringify(contatos));
       mudarSala('global');
@@ -460,9 +459,12 @@
     };
 
     function logout() { localStorage.clear(); location.reload(); }
+    
     function apagarHistoricoParaAmbos() {
       const room = new URLSearchParams(window.location.search).get('room');
-      if(room && confirm("WIPE ALL DATA IN THIS ROOM?")) socket.emit('request clear', room);
+      if(room && confirm("APAGAR TODAS AS MENSAGENS PARA AMBOS? (Esta ação é irreversível)")) {
+        socket.emit('request clear', room);
+      }
     }
 
     document.addEventListener('click', (e) => {
