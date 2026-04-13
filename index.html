@@ -3,74 +3,212 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Void Chat - Pro</title>
+  <title>Chat Privado Pro - Cyber Edition</title>
   <style>
+    /* Estilo Geral Cyberpunk */
     :root {
-      --bg-main: #0e111a;
-      --bg-sidebar: #07090e;
-      --bg-header: #161b22;
-      --accent-coral: #ff6f61;
-      --text-primary: #eaeaea;
-      --text-secondary: #a8a8a8;
-      --msg-sent: #ff6f61;
-      --msg-received: #1c212d;
-      --border-color: #21262d;
+      --bg-dark: #050505;
+      --panel-dark: #0d1117;
+      --neon-cyan: #00f2ff;
+      --neon-pink: #ff00ff;
+      --neon-border: rgba(0, 242, 255, 0.3);
+      --text-main: #e0e0e0;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg-main); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
     
-    /* Sidebar */
-    #sidebar { width: 320px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; transition: all 0.3s ease; }
-    .sidebar-header { padding: 15px; background: var(--bg-header); display: flex; justify-content: space-between; align-items: center; font-weight: bold; border-bottom: 1px solid var(--border-color); }
-    #search-box { padding: 12px; position: relative; }
-    #search-user { width: 100%; background: var(--bg-main); border: 1px solid var(--border-color); padding: 12px; border-radius: 20px; color: white; outline: none; transition: 0.3s; }
-    #search-user:focus { border-color: var(--accent-coral); box-shadow: 0 0 8px rgba(255, 111, 97, 0.2); }
-    
-    #suggestions { position: absolute; top: 60px; left: 10px; right: 10px; background: var(--bg-header); border-radius: 12px; list-style: none; z-index: 100; display: none; border: 1px solid var(--accent-coral); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    #suggestions li { padding: 12px; cursor: pointer; border-bottom: 1px solid var(--border-color); }
-    #suggestions li:hover { background: var(--bg-main); color: var(--accent-coral); }
+    body { 
+      font-family: 'Segoe UI', Roboto, sans-serif; 
+      background: var(--bg-dark); 
+      color: var(--text-main); 
+      display: flex; 
+      height: 100vh; 
+      overflow: hidden; 
+    }
 
-    .section-title { padding: 15px 15px 5px 15px; font-size: 11px; color: var(--accent-coral); text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
+    /* Sidebar com efeito Neon */
+    #sidebar { 
+      width: 320px; 
+      background: var(--panel-dark); 
+      border-right: 2px solid var(--neon-border); 
+      display: flex; 
+      flex-direction: column; 
+      box-shadow: 5px 0 15px rgba(0, 242, 255, 0.05);
+    }
+
+    .sidebar-header { 
+      padding: 20px; 
+      background: #161b22; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border-bottom: 1px solid var(--neon-pink);
+    }
+
+    #search-box { padding: 15px; background: var(--panel-dark); }
+    
+    /* Input com brilho no foco */
+    #search-user { 
+      width: 100%; 
+      background: #161b22; 
+      border: 1px solid var(--neon-border); 
+      padding: 12px; 
+      border-radius: 4px; 
+      color: white; 
+      outline: none; 
+      transition: 0.3s;
+    }
+    #search-user:focus { 
+      border-color: var(--neon-pink); 
+      box-shadow: 0 0 10px rgba(255, 0, 255, 0.4); 
+    }
+
+    .section-title { 
+      padding: 15px; 
+      font-size: 11px; 
+      color: var(--neon-cyan); 
+      text-transform: uppercase; 
+      letter-spacing: 2px; 
+    }
+
     #contacts-list { flex: 1; overflow-y: auto; }
-    .contact-item { padding: 15px; cursor: pointer; border-bottom: 1px solid var(--border-color); transition: 0.2s; display: flex; align-items: center; gap: 12px; }
-    .contact-item:hover { background: var(--bg-header); }
-    .contact-item.active { background: var(--bg-header); border-left: 3px solid var(--accent-coral); }
+    
+    .contact-item { 
+      padding: 15px; 
+      cursor: pointer; 
+      border-bottom: 1px solid rgba(255,255,255,0.05); 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+      transition: 0.3s;
+    }
+    .contact-item:hover { background: rgba(0, 242, 255, 0.05); }
+    .contact-item.active { 
+      background: linear-gradient(90deg, rgba(0, 242, 255, 0.1), transparent);
+      border-left: 3px solid var(--neon-cyan); 
+    }
 
-    /* Chat Area */
-    #chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background-color: var(--bg-main); }
-    #chat-header { padding: 10px 20px; background: var(--bg-header); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); min-height: 65px; }
-    #back-btn { display: none; background: none; border: none; color: var(--accent-coral); font-size: 24px; cursor: pointer; margin-right: 10px; }
+    /* Área de Chat */
+    #chat-area { flex: 1; display: flex; flex-direction: column; background: #000; }
+    
+    #chat-header { 
+      padding: 15px; 
+      background: #0d1117; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border-bottom: 1px solid var(--neon-border);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
 
-    #messages { flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 12px; background: var(--bg-main); list-style: none; }
-    .msg-box { max-width: 80%; padding: 10px 16px; font-size: 15px; border-radius: 18px; line-height: 1.5; word-wrap: break-word; }
-    .sent { align-self: flex-end; background: var(--msg-sent); color: #000; font-weight: 500; border-bottom-right-radius: 4px; box-shadow: 0 4px 10px rgba(255, 111, 97, 0.2); }
-    .received { align-self: flex-start; background: var(--msg-received); border-bottom-left-radius: 4px; border: 1px solid var(--border-color); }
-    .system-msg { align-self: center; background: transparent; border: 1px solid var(--accent-coral); color: var(--accent-coral); font-size: 11px; padding: 5px 15px; border-radius: 20px; margin: 10px 0; text-transform: uppercase; letter-spacing: 1px; }
+    #messages { 
+      flex: 1; 
+      overflow-y: auto; 
+      padding: 20px; 
+      background: #050505;
+      display: flex; 
+      flex-direction: column; 
+      gap: 15px; 
+    }
 
-    /* Profile Menu */
-    #profile-menu { position: fixed; background: var(--bg-header); border: 1px solid var(--accent-coral); border-radius: 12px; display: none; z-index: 2000; box-shadow: 0 8px 25px rgba(0,0,0,0.8); width: 180px; overflow: hidden; }
-    #profile-menu button { width: 100%; padding: 12px; background: none; border: none; color: white; text-align: left; cursor: pointer; border-bottom: 1px solid var(--border-color); font-size: 14px; }
-    #profile-menu button:hover { background: var(--accent-coral); color: black; }
+    /* Balões de Mensagem Estilo Neon */
+    .msg-box { 
+      max-width: 75%; 
+      padding: 10px 15px; 
+      border-radius: 8px; 
+      position: relative; 
+      font-size: 15px;
+      border: 1px solid transparent;
+    }
 
-    .user-clickable { cursor: pointer; text-decoration: none; color: var(--accent-coral); font-weight: bold; }
+    .sent { 
+      align-self: flex-end; 
+      background: rgba(0, 242, 255, 0.1); 
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 8px rgba(0, 242, 255, 0.2);
+    }
 
-    /* Footer / Form */
-    #form { background: var(--bg-header); padding: 12px 20px; display: flex; align-items: center; gap: 10px; border-top: 1px solid var(--border-color); }
-    #input { flex: 1; background: var(--bg-main); border: 1px solid var(--border-color); padding: 12px 18px; border-radius: 25px; color: white; outline: none; font-size: 15px; }
-    #input:focus { border-color: var(--accent-coral); }
-    .btn-icon { background: transparent; border: none; color: var(--text-secondary); cursor: pointer; font-size: 22px; }
-    .btn-send { background: var(--accent-coral); color: black; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-    .btn-send:hover { transform: scale(1.05); }
+    .received { 
+      align-self: flex-start; 
+      background: rgba(255, 0, 255, 0.05); 
+      border-color: var(--neon-pink);
+      box-shadow: 0 0 8px rgba(255, 0, 255, 0.1);
+    }
 
-    /* Login Screen */
-    #login-screen { position: fixed; inset: 0; background: var(--bg-main); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-    .login-input { padding: 16px; margin: 8px; width: 100%; max-width: 300px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-header); color: white; font-size: 16px; }
+    .system-msg { 
+      align-self: center; 
+      border: 1px solid var(--neon-pink);
+      color: var(--neon-pink);
+      font-size: 12px; 
+      padding: 4px 12px; 
+      border-radius: 4px; 
+      text-transform: uppercase;
+      background: rgba(255, 0, 255, 0.05);
+    }
+
+    /* Rodapé do Chat */
+    #form { 
+      padding: 15px; 
+      background: #0d1117; 
+      border-top: 1px solid var(--neon-border);
+      display: flex; 
+      gap: 10px; 
+    }
+
+    #input { 
+      flex: 1; 
+      background: #161b22; 
+      border: 1px solid var(--neon-border); 
+      padding: 12px 20px; 
+      border-radius: 4px; 
+      color: white; 
+      outline: none; 
+    }
+
+    .btn-send { 
+      background: var(--neon-cyan); 
+      color: #000; 
+      border: none; 
+      padding: 0 20px; 
+      border-radius: 4px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      text-transform: uppercase;
+      box-shadow: 0 0 10px var(--neon-cyan);
+    }
+
+    /* Menu de Contexto */
+    #profile-menu { 
+      position: fixed; 
+      background: #161b22; 
+      border: 1px solid var(--neon-cyan); 
+      border-radius: 4px; 
+      display: none; 
+      z-index: 2000; 
+      box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+    }
+    #profile-menu button { 
+      width: 100%; padding: 12px 20px; 
+      background: none; border: none; color: white; 
+      text-align: left; cursor: pointer; 
+    }
+    #profile-menu button:hover { background: var(--neon-cyan); color: #000; }
+
+    /* Login Screen Neon */
+    #login-screen { 
+      position: fixed; inset: 0; background: #000; 
+      display: flex; flex-direction: column; align-items: center; justify-content: center; 
+      z-index: 1000; 
+    }
+    .login-input { 
+      padding: 15px; margin: 10px; width: 300px; 
+      background: transparent; border: 1px solid var(--neon-cyan); 
+      color: white; border-radius: 4px; text-align: center;
+    }
 
     @media (max-width: 768px) {
       #sidebar { width: 100%; position: absolute; height: 100%; z-index: 5; }
       #chat-area { width: 100%; position: absolute; height: 100%; z-index: 1; display: none; }
-      #back-btn { display: block; }
       body.chat-open #sidebar { display: none; }
       body.chat-open #chat-area { display: flex; }
     }
@@ -79,61 +217,60 @@
 <body>
 
   <div id="profile-menu">
-    <button id="btn-conversa">💬 Conversar</button>
-    <button id="btn-salvar">💾 Salvar Contato</button>
+    <button id="btn-conversa">ABRIR CHAT</button>
+    <button id="btn-salvar">SALVAR CONTATO</button>
   </div>
 
   <div id="login-screen">
-    <h1 style="margin-bottom: 30px; color: var(--accent-coral); letter-spacing: 4px;">VOID CHAT</h1>
-    <input id="user-name" class="login-input" type="text" placeholder="Usuário" autocomplete="off">
-    <input id="user-pass" class="login-input" type="password" placeholder="Senha">
-    <button onclick="fazerLogin()" class="btn-send" style="width:100%; max-width:300px; margin-top:15px; height: 55px;">ENTRAR NO SISTEMA</button>
-    <p id="login-status" style="margin-top:15px; color: var(--accent-coral); font-size: 14px;"></p>
+    <h1 style="color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); margin-bottom: 30px;">SYSTEM ACCESS</h1>
+    <input id="user-name" class="login-input" type="text" placeholder="USER ID" autocomplete="off">
+    <input id="user-pass" class="login-input" type="password" placeholder="ACCESS KEY">
+    <button onclick="fazerLogin()" class="btn-send" style="height: 50px; width: 300px; margin-top: 20px;">INITIALIZE</button>
+    <p id="login-status" style="margin-top:15px;"></p>
   </div>
 
   <div id="sidebar">
     <div class="sidebar-header">
-      <span style="color: var(--accent-coral)">CONVERSAS</span>
-      <button onclick="logout()" style="background:none; border: 1px solid #ea0038; color:#ea0038; padding: 4px 8px; border-radius: 4px; cursor:pointer; font-size:10px; font-weight:bold;">SAIR</button>
+      <span style="color: var(--neon-cyan)">TERMINAL</span>
+      <button onclick="logout()" style="background:none; border:1px solid var(--neon-pink); color:var(--neon-pink); padding: 4px 8px; cursor:pointer; font-size:10px;">DISCONNECT</button>
     </div>
     <div id="search-box">
-      <input id="search-user" placeholder="🔍 Buscar usuário..." oninput="buscarUsuariosSugestao()" autocomplete="off">
-      <ul id="suggestions"></ul>
+      <input id="search-user" placeholder="BUSCAR USUÁRIO..." oninput="buscarUsuariosSugestao()" autocomplete="off">
+      <ul id="suggestions" style="position: absolute; background: #161b22; width: 290px; border: 1px solid var(--neon-cyan); z-index: 100; list-style: none; display: none;"></ul>
     </div>
     <div class="contact-item" onclick="mudarSala('global')" id="item-global">
-      <span style="font-size:20px;">🌐</span> Chat Global
+      <span style="color: var(--neon-cyan)">#</span> CHAT GLOBAL
     </div>
-    <div class="section-title">Contatos Recentes</div>
+    <div class="section-title">RECENT_UPLOADS</div>
     <div id="contacts-list"></div>
   </div>
 
   <div id="chat-area">
     <div id="chat-header">
       <div style="display:flex; align-items:center;">
-        <button id="back-btn" onclick="fecharChatNoCelular()">←</button>
-        <span id="chat-title" style="font-weight: bold;">Selecione uma conversa</span>
+        <button id="back-btn" onclick="fecharChatNoCelular()" style="background:none; border:none; color:var(--neon-cyan); font-size:20px; margin-right:10px; cursor:pointer;">&lt;</button>
+        <span id="chat-title" style="color: var(--neon-cyan); font-weight: bold; letter-spacing: 1px;">WAITING...</span>
       </div>
       <div class="header-actions">
-        <button id="remove-contact-btn" style="display:none; background:transparent; border: 1px solid var(--text-secondary); color:var(--text-secondary); padding:8px 12px; border-radius:20px; cursor:pointer; font-size: 11px; margin-right: 8px;" onclick="removerContatoLocal()">Remover</button>
-        <button id="del-btn" style="display:none; background:#ea0038; color:white; border:none; padding:8px 15px; border-radius:20px; cursor:pointer; font-size: 11px; font-weight: bold;" onclick="apagarHistoricoParaAmbos()">LIMPAR TUDO</button>
+        <button id="remove-contact-btn" style="display:none; background:transparent; color: #888; border:1px solid #444; padding:5px 10px; cursor:pointer; margin-right:5px;" onclick="removerContatoLocal()">Remover</button>
+        <button id="del-btn" style="display:none; background:transparent; color: var(--neon-pink); border:1px solid var(--neon-pink); padding:5px 10px; cursor:pointer;" onclick="apagarHistoricoParaAmbos()">WIPE DATA</button>
       </div>
     </div>
     <ul id="messages"></ul>
     <form id="form">
       <input type="file" id="file-input" style="display:none;" accept="image/*,video/*">
-      <button type="button" class="btn-icon" onclick="document.getElementById('file-input').click()">📎</button>
-      <input id="input" autocomplete="off" placeholder="Digite sua mensagem..." />
-      <button type="submit" class="btn-send">S</button>
+      <button type="button" style="background:none; border:none; font-size:20px; color:var(--neon-cyan); cursor:pointer;" onclick="document.getElementById('file-input').click()">+</button>
+      <input id="input" autocomplete="off" placeholder="Type a message..." />
+      <button type="submit" class="btn-send">SEND</button>
     </form>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    // MANTIVE TODA A SUA LÓGICA DE JAVASCRIPT ORIGINAL ABAIXO
     let socket;
     let currentUser = "";
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyNgvP69t-velhggxX_L2Nu5WreTDAcWW9w27xWRoDwFfjcd_oR2Pdx81KzZCYMRWA/exec";
-
-    // --- FUNÇÕES DE LÓGICA (MANTIDAS DO SEU CÓDIGO) ---
 
     function playErrorBeep() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -165,7 +302,7 @@
       const user = document.getElementById('user-name').value.trim();
       const pass = document.getElementById('user-pass').value.trim();
       if(!user || !pass) return;
-      document.getElementById('login-status').innerText = "Verificando terminal...";
+      document.getElementById('login-status').innerText = "CONNECTING...";
       try {
         const res = await fetch(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, { redirect: 'follow' });
         const data = await res.json();
@@ -180,7 +317,7 @@
         }
       } catch (e) {
         playErrorBeep();
-        alert("Erro de conexão.");
+        alert("CON_ERROR");
       }
     }
 
@@ -193,7 +330,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       const room = urlParams.get('room') || 'global';
       const target = urlParams.get('target');
-      document.getElementById('chat-title').innerText = target ? target : "🌐 Chat Global";
+      document.getElementById('chat-title').innerText = target ? target.toUpperCase() : "GLOBAL_NET";
       document.getElementById('del-btn').style.display = (target && room !== 'global') ? "block" : "none";
       document.getElementById('remove-contact-btn').style.display = (target && room !== 'global') ? "block" : "none";
       document.getElementById('messages').innerHTML = "";
@@ -213,10 +350,10 @@
           item.innerHTML = `<span>${data.text}</span>`;
         } else {
           item.className = `msg-box ${isMe ? 'sent' : 'received'}`;
-          let html = `<small class="user-clickable" onclick="abrirMenuPerfil(event, '${data.username}')" style="display:block; font-size: 10px; opacity:0.7; margin-bottom:4px;">${data.username}</small>`;
+          let html = `<small class="user-clickable" onclick="abrirMenuPerfil(event, '${data.username}')" style="display:block; font-weight:bold; color:var(--neon-cyan); opacity:0.8; margin-bottom:4px; font-size:10px;">> ${data.username}</small>`;
           if (data.file) {
-            if (data.fileType === 'image') html += `<img src="${data.file}" style="max-width:100%; border-radius:10px;">`;
-            else if (data.fileType === 'video') html += `<video src="${data.file}" controls style="max-width:100%; border-radius:10px;"></video>`;
+            if (data.fileType === 'image') html += `<img src="${data.file}" style="max-width:100%; border-radius:4px; border:1px solid var(--neon-cyan)">`;
+            else if (data.fileType === 'video') html += `<video src="${data.file}" controls style="max-width:100%"></video>`;
           } else {
             html += `<span>${data.text}</span>`;
           }
@@ -241,16 +378,13 @@
       menu.style.display = 'block';
       menu.style.top = event.pageY + 'px';
       menu.style.left = event.pageX + 'px';
-
       document.getElementById('btn-conversa').onclick = () => {
         const r = [currentUser, nome].sort().join('_');
         mudarSala(r, nome, true);
         menu.style.display = 'none';
       };
-
       document.getElementById('btn-salvar').onclick = () => {
         salvarContatoSilencioso(nome);
-        alert(`${nome} salvo!`);
         menu.style.display = 'none';
       };
     }
@@ -273,7 +407,7 @@
       if (autoPing && target) {
         setTimeout(() => {
           if (socket && socket.connected) {
-            socket.emit('chat message', { text: `👋 ${currentUser} iniciou o chat.`, isSystem: true });
+            socket.emit('chat message', { text: `ACCESS_GRANTED: ${currentUser} entrou.`, isSystem: true });
           }
         }, 600);
       }
@@ -293,7 +427,7 @@
             .filter(u => u.toLowerCase() !== currentUser.toLowerCase())
             .map(u => {
               const r = [currentUser, u].sort().join('_');
-              return `<li onclick="mudarSala('${r}', '${u}', true)">👤 ${u}</li>`;
+              return `<li style="padding:10px; cursor:pointer; border-bottom:1px solid #333;" onclick="mudarSala('${r}', '${u}', true)">ID: ${u}</li>`;
             }).join('');
           sugList.style.display = "block";
         } else { sugList.style.display = "none"; }
@@ -307,15 +441,15 @@
       document.getElementById('item-global').className = (!targetAtual) ? "contact-item active" : "contact-item";
       lista.innerHTML = contatos.map(nome => `
         <div class="contact-item ${targetAtual === nome ? 'active' : ''}" onclick="mudarSala('${[currentUser, nome].sort().join('_')}', '${nome}')">
-          <div style="width:36px; height:36px; background:var(--accent-coral); color:black; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">${nome[0].toUpperCase()}</div>
-          ${nome}
+          <div style="width:30px; height:30px; border:1px solid var(--neon-cyan); border-radius:2px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--neon-cyan);">${nome[0].toUpperCase()}</div>
+          ${nome.toUpperCase()}
         </div>
       `).join('');
     }
 
     function removerContatoLocal() {
       const target = new URLSearchParams(window.location.search).get('target');
-      if (!target || !confirm(`Remover "${target}"?`)) return;
+      if (!target || !confirm(`DELETAR ${target}?`)) return;
       let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]").filter(n => n !== target);
       localStorage.setItem('chat_recentes', JSON.stringify(contatos));
       mudarSala('global');
@@ -343,7 +477,7 @@
     function logout() { localStorage.clear(); location.reload(); }
     function apagarHistoricoParaAmbos() {
       const room = new URLSearchParams(window.location.search).get('room');
-      if(room && confirm("Apagar histórico para ambos?")) socket.emit('request clear', room);
+      if(room && confirm("WIPE ALL DATA?")) socket.emit('request clear', room);
     }
 
     document.addEventListener('click', (e) => {
