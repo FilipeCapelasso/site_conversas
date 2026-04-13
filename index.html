@@ -95,17 +95,16 @@
   <script>
     let socket;
     let currentUser = "";
-    // URL atualizada com /exec conforme as imagens da sua implantação
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr-AEnQMZfGCkg7auuFP5e2q5qkUq41Qt1SoKmLiPC8EmTR8poj2Wv2OPYsJEj2-zl/exec";
+    // URL atualizada com a nova ID de implantação fornecida
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyNgvP69t-velhggxX_L2Nu5WreTDAcWW9w27xWRoDwFfjcd_oR2Pdx81KzZCYMRWA/exec";
 
-    // Função para emitir o beep negativo (denied beep)
     function playErrorBeep() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
 
       oscillator.type = 'sawtooth';
-      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // Frequência baixa para som negativo
+      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
       oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
       
       gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
@@ -144,12 +143,12 @@
           localStorage.setItem('chat_pass', pass);
           location.reload();
         } else {
-          playErrorBeep(); // Beep negativo em caso de erro nos dados
+          playErrorBeep();
           alert(data.message || "Erro no login");
           document.getElementById('login-status').innerText = "";
         }
       } catch (e) {
-        playErrorBeep(); // Beep negativo em caso de falha na conexão
+        playErrorBeep();
         alert("Erro de conexão com o servidor de cadastro.");
         document.getElementById('login-status').innerText = "";
       }
