@@ -18,6 +18,7 @@
     }
     
     .sidebar-header { padding: 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+    
     #search-box { padding: 10px; position: relative; background: #111b21; }
     #search-user { width: 100%; background: #2a3942; border: none; padding: 12px; border-radius: 8px; color: white; outline: none; font-size: 16px; }
     
@@ -27,29 +28,13 @@
 
     .section-title { padding: 15px 15px 5px 15px; font-size: 12px; color: #00a884; text-transform: uppercase; letter-spacing: 1px; }
     #contacts-list { flex: 1; overflow-y: auto; }
-    .contact-item { padding: 15px; cursor: pointer; border-bottom: 1px solid #202c33; transition: 0.2s; display: flex; align-items: center; gap: 10px; position: relative; }
+    .contact-item { padding: 15px; cursor: pointer; border-bottom: 1px solid #202c33; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
     .contact-item:hover { background: #202c33; }
     .contact-item.active { background: #2a3942; border-left: 4px solid #00a884; }
 
-    /* Badge de mensagens não lidas */
-    .unread-badge {
-      background: #00a884;
-      color: #111b21;
-      font-size: 12px;
-      font-weight: bold;
-      min-width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      right: 15px;
-      padding: 0 5px;
-    }
-
     #chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background-color: #0b141a; }
     #chat-header { padding: 10px 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3942; min-height: 60px; }
+    
     #back-btn { display: none; background: none; border: none; color: #00a884; font-size: 20px; cursor: pointer; margin-right: 10px; }
 
     #messages { 
@@ -75,6 +60,8 @@
 
     #login-screen { position: fixed; inset: 0; background: #0b141a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
     .login-input { padding: 15px; margin: 8px; width: 100%; max-width: 300px; border-radius: 8px; border: none; background: #2a3942; color: white; font-size: 16px; }
+
+    .header-actions { display: flex; gap: 8px; }
 
     @media (max-width: 768px) {
       #sidebar { width: 100%; position: absolute; height: 100%; z-index: 5; }
@@ -120,7 +107,10 @@
         <button id="back-btn" onclick="fecharChatNoCelular()">←</button>
         <span id="chat-title">Selecione uma conversa</span>
       </div>
-      <button id="del-btn" style="display:none; background:#ea0038; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; font-size: 12px;" onclick="apagarHistoricoParaAmbos()">Apagar</button>
+      <div class="header-actions">
+        <button id="remove-contact-btn" style="display:none; background:#3b4a54; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; font-size: 12px;" onclick="removerContatoLocal()">Remover Contato</button>
+        <button id="del-btn" style="display:none; background:#ea0038; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; font-size: 12px;" onclick="apagarHistoricoParaAmbos()">Apagar Tudo</button>
+      </div>
     </div>
 
     <ul id="messages"></ul>
@@ -136,8 +126,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script>
     let socket;
-    let currentUser = localStorage.getItem('chat_user') || "";
-    let unreadCounts = JSON.parse(localStorage.getItem('unread_counts') || "{}");
+    let currentUser = "";
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyNgvP69t-velhggxX_L2Nu5WreTDAcWW9w27xWRoDwFfjcd_oR2Pdx81KzZCYMRWA/exec";
 
     function playErrorBeep() {
@@ -156,66 +145,17 @@
     }
 
     window.onload = () => {
+      const savedUser = localStorage.getItem('chat_user');
       const savedPass = localStorage.getItem('chat_pass');
-      if (currentUser && savedPass) {
+      if (savedUser && savedPass) {
+        currentUser = savedUser;
         document.getElementById('login-screen').style.display = 'none';
-        iniciarConexaoBase();
         const urlParams = new URLSearchParams(window.location.search);
         if(urlParams.get('room')) document.body.classList.add('chat-open');
         renderizarContatos();
         iniciarChat();
       }
     };
-
-    function iniciarConexaoBase() {
-      // Conexão persistente para receber notificações mesmo fora de salas
-      if (!socket) {
-        socket = io({ query: { room: 'notify', username: currentUser } });
-        
-        socket.on('chat message', (data) => {
-          const urlParams = new URLSearchParams(window.location.search);
-          const currentTarget = urlParams.get('target');
-          
-          // Se a mensagem for para mim e eu não estiver com o chat dela aberto
-          if (data.username !== currentUser && data.username !== currentTarget && data.room !== 'global') {
-            incrementUnread(data.username);
-            adicionarContatoRecente(data.username);
-          }
-          
-          // Se eu estiver na sala certa, renderiza a mensagem
-          const myRoom = urlParams.get('room') || 'global';
-          if (data.room === myRoom) {
-             renderMessage(data);
-          }
-        });
-
-        socket.on('notify contact', (data) => {
-           if (data.to === currentUser) {
-             adicionarContatoRecente(data.from);
-             incrementUnread(data.from);
-           }
-        });
-
-        socket.on('clear messages', () => { 
-          document.getElementById('messages').innerHTML = ""; 
-        });
-      }
-    }
-
-    function incrementUnread(user) {
-      unreadCounts[user] = (unreadCounts[user] || 0) + 1;
-      localStorage.setItem('unread_counts', JSON.stringify(unreadCounts));
-      renderizarContatos();
-    }
-
-    function adicionarContatoRecente(nome) {
-      let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
-      if (!contatos.includes(nome)) {
-        contatos.push(nome);
-        localStorage.setItem('chat_recentes', JSON.stringify(contatos));
-        renderizarContatos();
-      }
-    }
 
     async function fazerLogin() {
       const user = document.getElementById('user-name').value.trim();
@@ -240,51 +180,89 @@
       }
     }
 
+    function fecharChatNoCelular() {
+      document.body.classList.remove('chat-open');
+      window.history.pushState({}, '', window.location.pathname);
+    }
+
     function mudarSala(novaSala, target = null) {
       if (target) {
-        adicionarContatoRecente(target);
-        unreadCounts[target] = 0; // Limpa ao abrir
-        localStorage.setItem('unread_counts', JSON.stringify(unreadCounts));
+        let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
+        if (!contatos.includes(target)) {
+          contatos.push(target);
+          localStorage.setItem('chat_recentes', JSON.stringify(contatos));
+        }
       }
       const novaUrl = target ? `?room=${novaSala}&target=${target}` : `?room=global`;
       window.history.pushState({}, '', novaUrl);
       document.body.classList.add('chat-open');
       iniciarChat();
+      document.getElementById('suggestions').style.display = "none";
+      document.getElementById('search-user').value = "";
     }
 
     function iniciarChat() {
+      if (socket) socket.disconnect();
       const urlParams = new URLSearchParams(window.location.search);
       const room = urlParams.get('room') || 'global';
       const target = urlParams.get('target');
 
       document.getElementById('chat-title').innerText = target ? target : "🌎 Chat Global";
-      document.getElementById('del-btn').style.display = (target && room !== 'global') ? "block" : "none";
+      
+      // Mostrar botões de ação se for chat privado
+      const isPrivate = (target && room !== 'global');
+      document.getElementById('del-btn').style.display = isPrivate ? "block" : "none";
+      document.getElementById('remove-contact-btn').style.display = isPrivate ? "block" : "none";
+      
       document.getElementById('messages').innerHTML = "";
-      
-      if (socket) {
-        socket.emit('join room', room);
-      }
-      
       renderizarContatos();
-      document.getElementById('suggestions').style.display = "none";
-      document.getElementById('search-user').value = "";
+
+      socket = io({ query: { room: room, username: currentUser } });
+
+      socket.on('chat message', (data) => {
+        const item = document.createElement('li');
+        const isMe = data.username === currentUser;
+        item.className = `msg-box ${isMe ? 'sent' : 'received'}`;
+        let html = `<small style="display:block; font-weight:bold; opacity:0.6; margin-bottom:4px;">${data.username}</small>`;
+        if (data.file) {
+          if (data.fileType === 'image') html += `<img src="${data.file}">`;
+          else if (data.fileType === 'video') html += `<video src="${data.file}" controls></video>`;
+        } else {
+          html += `<span>${data.text}</span>`;
+        }
+        item.innerHTML = html;
+        document.getElementById('messages').appendChild(item);
+        document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+      });
+
+      socket.on('notify contact', (data) => {
+        if (data.to.toLowerCase() === currentUser.toLowerCase()) {
+          let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
+          if (!contatos.includes(data.from)) {
+            contatos.push(data.from);
+            localStorage.setItem('chat_recentes', JSON.stringify(contatos));
+            renderizarContatos();
+          }
+        }
+      });
+
+      socket.on('clear messages', () => { document.getElementById('messages').innerHTML = ""; });
     }
 
-    function renderMessage(data) {
-      const messagesUl = document.getElementById('messages');
-      const item = document.createElement('li');
-      const isMe = data.username === currentUser;
-      item.className = `msg-box ${isMe ? 'sent' : 'received'}`;
-      let html = `<small style="display:block; font-weight:bold; opacity:0.6; margin-bottom:4px;">${data.username}</small>`;
-      if (data.file) {
-        if (data.fileType === 'image') html += `<img src="${data.file}">`;
-        else if (data.fileType === 'video') html += `<video src="${data.file}" controls></video>`;
-      } else {
-        html += `<span>${data.text}</span>`;
+    // NOVA FUNÇÃO: Remover contato da lista lateral (localStorage)
+    function removerContatoLocal() {
+      const target = new URLSearchParams(window.location.search).get('target');
+      if (!target) return;
+      
+      if (confirm(`Remover "${target}" da sua lista de contatos?`)) {
+        let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
+        contatos = contatos.filter(nome => nome !== target);
+        localStorage.setItem('chat_recentes', JSON.stringify(contatos));
+        
+        // Volta para o global
+        mudarSala('global');
+        renderizarContatos();
       }
-      item.innerHTML = html;
-      messagesUl.appendChild(item);
-      messagesUl.scrollTop = messagesUl.scrollHeight;
     }
 
     async function buscarUsuariosSugestao() {
@@ -308,66 +286,38 @@
       const contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
       const targetAtual = new URLSearchParams(window.location.search).get('target');
       document.getElementById('item-global').className = (!targetAtual) ? "contact-item active" : "contact-item";
-      
-      lista.innerHTML = contatos.map(nome => {
-        const unread = unreadCounts[nome] || 0;
-        return `
-          <div class="contact-item ${targetAtual === nome ? 'active' : ''}" onclick="mudarSala('${[currentUser, nome].sort().join('_')}', '${nome}')">
-            <div style="width:36px; height:36px; background:#3b4a54; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">${nome[0].toUpperCase()}</div>
-            <span style="flex:1">${nome}</span>
-            ${unread > 0 ? `<div class="unread-badge">${unread}</div>` : ''}
-          </div>
-        `;
-      }).join('');
+      lista.innerHTML = contatos.map(nome => `
+        <div class="contact-item ${targetAtual === nome ? 'active' : ''}" onclick="mudarSala('${[currentUser, nome].sort().join('_')}', '${nome}')">
+          <div style="width:36px; height:36px; background:#3b4a54; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">${nome[0].toUpperCase()}</div>
+          ${nome}
+        </div>
+      `).join('');
     }
 
     document.getElementById('form').onsubmit = (e) => {
       e.preventDefault();
       const input = document.getElementById('input');
-      const urlParams = new URLSearchParams(window.location.search);
-      const room = urlParams.get('room') || 'global';
-      const target = urlParams.get('target');
-
       if(input.value.trim() && socket) {
-        const msgData = { text: input.value, room: room, username: currentUser };
-        socket.emit('chat message', msgData);
-        
-        // Notifica o alvo para ele salvar o contato caso seja o primeiro contato
-        if (target) {
-          socket.emit('notify contact', { from: currentUser, to: target });
-        }
-        
+        socket.emit('chat message', { text: input.value });
         input.value = '';
       }
     };
 
     document.getElementById('file-input').onchange = (e) => {
       const file = e.target.files[0];
-      const room = new URLSearchParams(window.location.search).get('room') || 'global';
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (event) => {
-        socket.emit('chat message', { 
-          file: event.target.result, 
-          fileType: file.type.split('/')[0], 
-          text: "", 
-          room: room, 
-          username: currentUser 
-        });
+        socket.emit('chat message', { file: event.target.result, fileType: file.type.split('/')[0], text: "" });
       };
       reader.readAsDataURL(file);
     };
-
-    function fecharChatNoCelular() {
-      document.body.classList.remove('chat-open');
-      window.history.pushState({}, '', window.location.pathname);
-    }
 
     function logout() { localStorage.clear(); location.reload(); }
     
     function apagarHistoricoParaAmbos() {
       const room = new URLSearchParams(window.location.search).get('room');
-      if(room && confirm("Apagar para ambos?")) socket.emit('request clear', room);
+      if(room && confirm("Apagar histórico de mensagens para ambos?")) socket.emit('request clear', room);
     }
 
     document.addEventListener('click', (e) => {
