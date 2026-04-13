@@ -14,8 +14,9 @@
     
     #search-box { padding: 10px; position: relative; background: #111b21; }
     #search-user { width: 100%; background: #2a3942; border: none; padding: 10px; border-radius: 8px; color: white; outline: none; }
-    #suggestions { position: absolute; top: 55px; left: 10px; right: 10px; background: #2a3942; border-radius: 8px; list-style: none; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+    #suggestions { position: absolute; top: 55px; left: 10px; right: 10px; background: #2a3942; border-radius: 8px; list-style: none; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid #3b4a54; }
     #suggestions li { padding: 12px; cursor: pointer; border-bottom: 1px solid #3b4a54; }
+    #suggestions li:last-child { border-bottom: none; }
     #suggestions li:hover { background: #3b4a54; }
 
     .section-title { padding: 15px 15px 5px 15px; font-size: 12px; color: #00a884; text-transform: uppercase; letter-spacing: 1px; }
@@ -62,7 +63,7 @@
     </div>
     
     <div id="search-box">
-      <input id="search-user" placeholder="🔍 Buscar usuário para conversar..." oninput="buscarUsuariosSugestao()">
+      <input id="search-user" placeholder="🔍 Buscar usuário..." oninput="buscarUsuariosSugestao()" autocomplete="off">
       <ul id="suggestions"></ul>
     </div>
 
@@ -94,7 +95,6 @@
   <script>
     let socket;
     let currentUser = "";
-    // Cole aqui sua URL do Google Apps Script
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzxV-Ox_q-hQZRCg0WyE6VRuvs3S_aGbfJOzleQgNmNQP44VuKOL8bxweC1sVCWY1Z";
 
     window.onload = () => {
@@ -136,7 +136,6 @@
       location.reload();
     }
 
-    // Gerenciamento de Sidebar
     function salvarNovoContato(nome) {
       if (nome === "global" || !nome) return;
       let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
@@ -168,9 +167,12 @@
       const novaUrl = target ? `?room=${novaSala}&target=${target}` : window.location.pathname;
       window.history.pushState({}, '', novaUrl);
       iniciarChat();
+      
+      // Limpa a busca ao mudar de sala
+      document.getElementById('suggestions').style.display = "none";
+      document.getElementById('search-user').value = "";
     }
 
-    // Funções de Chat
     function iniciarChat() {
       if (socket) socket.disconnect();
       
@@ -207,16 +209,21 @@
       socket.on('clear messages', () => { document.getElementById('messages').innerHTML = ""; });
     }
 
-    // Busca de usuários no Google Script
+    // FUNÇÃO DE BUSCA ATUALIZADA
     async function buscarUsuariosSugestao() {
       const query = document.getElementById('search-user').value.trim();
       const sugList = document.getElementById('suggestions');
-      if (query.length < 1) { sugList.style.display = "none"; return; }
+      
+      if (query.length < 1) { 
+        sugList.style.display = "none"; 
+        return; 
+      }
 
       try {
         const res = await fetch(`${SCRIPT_URL}?action=buscarUsuarios&query=${encodeURIComponent(query)}`, { redirect: 'follow' });
         const data = await res.json();
-        if(data.data && data.data.length > 0) {
+        
+        if(data.status === "success" && data.data && data.data.length > 0) {
           sugList.innerHTML = data.data
             .filter(u => u.toLowerCase() !== currentUser.toLowerCase())
             .map(u => `<li onclick="mudarSala('${[currentUser, u].sort().join('_')}', '${u}')">👤 ${u}</li>`).join('');
@@ -224,10 +231,12 @@
         } else {
           sugList.style.display = "none";
         }
-      } catch(e) { console.error("Erro na busca"); }
+      } catch(e) { 
+        console.error("Erro na busca"); 
+        sugList.style.display = "none";
+      }
     }
 
-    // Envio de Arquivos
     document.getElementById('file-input').onchange = (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -254,7 +263,6 @@
       }
     }
 
-    // Fechar sugestões ao clicar fora
     document.addEventListener('click', (e) => {
       if(!e.target.closest('#search-box')) document.getElementById('suggestions').style.display = 'none';
     });
