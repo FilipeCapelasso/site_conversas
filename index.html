@@ -8,7 +8,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #0b141a; color: #e9edef; display: flex; height: 100vh; overflow: hidden; }
     
-    /* Sidebar - Ajustada para Responsividade */
     #sidebar { 
       width: 320px; 
       background: #111b21; 
@@ -33,11 +32,9 @@
     .contact-item:hover { background: #202c33; }
     .contact-item.active { background: #2a3942; border-left: 4px solid #00a884; }
 
-    /* Chat Area */
     #chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background-color: #0b141a; }
     #chat-header { padding: 10px 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3942; min-height: 60px; }
     
-    /* Botão de voltar para celular */
     #back-btn { display: none; background: none; border: none; color: #00a884; font-size: 20px; cursor: pointer; margin-right: 10px; }
 
     #messages { 
@@ -56,34 +53,18 @@
     .received { align-self: flex-start; background: #202c33; border-bottom-left-radius: 0; }
     img, video { max-width: 100%; border-radius: 5px; margin-top: 5px; display: block; }
 
-    /* Footer / Input */
     #form { background: #202c33; padding: 10px; display: flex; align-items: center; gap: 8px; }
     #input { flex: 1; background: #2a3942; border: none; padding: 12px 15px; border-radius: 25px; color: white; outline: none; font-size: 16px; }
     .btn-icon { background: transparent; border: none; color: #8696a0; cursor: pointer; font-size: 24px; }
     .btn-send { background: #00a884; color: #111b21; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
-    /* Login Screen */
     #login-screen { position: fixed; inset: 0; background: #0b141a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
     .login-input { padding: 15px; margin: 8px; width: 100%; max-width: 300px; border-radius: 8px; border: none; background: #2a3942; color: white; font-size: 16px; }
 
-    /* --- MEDIA QUERIES PARA CELULAR --- */
     @media (max-width: 768px) {
-      #sidebar { 
-        width: 100%; 
-        position: absolute; 
-        height: 100%; 
-        z-index: 5;
-      }
-      #chat-area { 
-        width: 100%; 
-        position: absolute; 
-        height: 100%; 
-        z-index: 1;
-        display: none; /* Escondido até selecionar um chat */
-      }
+      #sidebar { width: 100%; position: absolute; height: 100%; z-index: 5; }
+      #chat-area { width: 100%; position: absolute; height: 100%; z-index: 1; display: none; }
       #back-btn { display: block; }
-      
-      /* Quando um chat está aberto no celular */
       body.chat-open #sidebar { display: none; }
       body.chat-open #chat-area { display: flex; }
     }
@@ -164,11 +145,8 @@
       if (savedUser && savedPass) {
         currentUser = savedUser;
         document.getElementById('login-screen').style.display = 'none';
-        
-        // Verifica se deve abrir direto em uma sala (celular)
         const urlParams = new URLSearchParams(window.location.search);
         if(urlParams.get('room')) document.body.classList.add('chat-open');
-        
         renderizarContatos();
         iniciarChat();
       }
@@ -212,8 +190,7 @@
       }
       const novaUrl = target ? `?room=${novaSala}&target=${target}` : `?room=global`;
       window.history.pushState({}, '', novaUrl);
-      
-      document.body.classList.add('chat-open'); // Abre o chat no celular
+      document.body.classList.add('chat-open');
       iniciarChat();
       document.getElementById('suggestions').style.display = "none";
       document.getElementById('search-user').value = "";
@@ -247,6 +224,20 @@
         document.getElementById('messages').appendChild(item);
         document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
       });
+
+      // ESCUTA NOTIFICAÇÃO DE NOVAS CONVERSAS
+      socket.on('notify contact', (data) => {
+        if (data.to.toLowerCase() === currentUser.toLowerCase()) {
+          let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
+          if (!contatos.includes(data.from)) {
+            contatos.push(data.from);
+            localStorage.setItem('chat_recentes', JSON.stringify(contatos));
+            renderizarContatos();
+          }
+        }
+      });
+
+      socket.on('clear messages', () => { document.getElementById('messages').innerHTML = ""; });
     }
 
     async function buscarUsuariosSugestao() {
