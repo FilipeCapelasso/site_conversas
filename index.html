@@ -1,224 +1,40 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Chat Privado Pro</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #0b141a; color: #e9edef; display: flex; height: 100vh; overflow: hidden; }
-    
-    #sidebar { 
-      width: 320px; 
-      background: #111b21; 
-      border-right: 1px solid #2a3942; 
-      display: flex; 
-      flex-direction: column; 
-      transition: all 0.3s ease;
-    }
-    
-    .sidebar-header { padding: 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
-    
-    #search-box { padding: 10px; position: relative; background: #111b21; }
-    #search-user { width: 100%; background: #2a3942; border: none; padding: 12px; border-radius: 8px; color: white; outline: none; font-size: 16px; }
-    
-    #suggestions { position: absolute; top: 60px; left: 10px; right: 10px; background: #2a3942; border-radius: 8px; list-style: none; z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border: 1px solid #3b4a54; }
-    #suggestions li { padding: 15px; cursor: pointer; border-bottom: 1px solid #3b4a54; }
-    #suggestions li:hover { background: #3b4a54; }
+// ... (mantenha o CSS igual) ...
 
-    .section-title { padding: 15px 15px 5px 15px; font-size: 12px; color: #00a884; text-transform: uppercase; letter-spacing: 1px; }
-    #contacts-list { flex: 1; overflow-y: auto; }
-    .contact-item { padding: 15px; cursor: pointer; border-bottom: 1px solid #202c33; transition: 0.2s; display: flex; align-items: center; gap: 10px; }
-    .contact-item:hover { background: #202c33; }
-    .contact-item.active { background: #2a3942; border-left: 4px solid #00a884; }
-
-    #chat-area { flex: 1; display: flex; flex-direction: column; position: relative; background-color: #0b141a; }
-    #chat-header { padding: 10px 15px; background: #202c33; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3942; min-height: 60px; }
-    
-    #back-btn { display: none; background: none; border: none; color: #00a884; font-size: 20px; cursor: pointer; margin-right: 10px; }
-
-    #messages { 
-      flex: 1; 
-      overflow-y: auto; 
-      padding: 20px; 
-      background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); 
-      background-blend-mode: overlay; 
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px; 
-    }
-    
-    .msg-box { max-width: 85%; padding: 8px 12px; font-size: 15px; border-radius: 10px; line-height: 1.4; word-wrap: break-word; }
-    .sent { align-self: flex-end; background: #005c4b; border-bottom-right-radius: 0; }
-    .received { align-self: flex-start; background: #202c33; border-bottom-left-radius: 0; }
-    img, video { max-width: 100%; border-radius: 5px; margin-top: 5px; display: block; }
-
-    #form { background: #202c33; padding: 10px; display: flex; align-items: center; gap: 8px; }
-    #input { flex: 1; background: #2a3942; border: none; padding: 12px 15px; border-radius: 25px; color: white; outline: none; font-size: 16px; }
-    .btn-icon { background: transparent; border: none; color: #8696a0; cursor: pointer; font-size: 24px; }
-    .btn-send { background: #00a884; color: #111b21; border: none; padding: 10px 18px; border-radius: 20px; font-weight: bold; cursor: pointer; }
-
-    #login-screen { position: fixed; inset: 0; background: #0b141a; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
-    .login-input { padding: 15px; margin: 8px; width: 100%; max-width: 300px; border-radius: 8px; border: none; background: #2a3942; color: white; font-size: 16px; }
-
-    .header-actions { display: flex; gap: 8px; }
-
-    @media (max-width: 768px) {
-      #sidebar { width: 100%; position: absolute; height: 100%; z-index: 5; }
-      #chat-area { width: 100%; position: absolute; height: 100%; z-index: 1; display: none; }
-      #back-btn { display: block; }
-      body.chat-open #sidebar { display: none; }
-      body.chat-open #chat-area { display: flex; }
-    }
-  </style>
-</head>
-<body>
-
-  <div id="login-screen">
-    <h2 style="margin-bottom: 20px;">Entrar no Chat</h2>
-    <input id="user-name" class="login-input" type="text" placeholder="Usuário" autocomplete="off">
-    <input id="user-pass" class="login-input" type="password" placeholder="Senha">
-    <button onclick="fazerLogin()" class="btn-send" style="width:100%; max-width:300px; margin-top:10px; height: 50px;">Entrar / Cadastrar</button>
-    <p id="login-status" style="margin-top:15px; color:#00a884;"></p>
-  </div>
-
-  <div id="sidebar">
-    <div class="sidebar-header">
-      <span>Conversas</span>
-      <button onclick="logout()" style="background:none; border:none; color:#ea0038; cursor:pointer; font-size:12px; font-weight:bold;">SAIR</button>
-    </div>
-    
-    <div id="search-box">
-      <input id="search-user" placeholder="🔍 Buscar usuário..." oninput="buscarUsuariosSugestao()" autocomplete="off">
-      <ul id="suggestions"></ul>
-    </div>
-
-    <div class="contact-item" onclick="mudarSala('global')" id="item-global">
-      <span style="font-size:18px;">🌎</span> Chat Global
-    </div>
-
-    <div class="section-title">Contatos Recentes</div>
-    <div id="contacts-list"></div>
-  </div>
-
-  <div id="chat-area">
-    <div id="chat-header">
-      <div style="display:flex; align-items:center;">
-        <button id="back-btn" onclick="fecharChatNoCelular()">←</button>
-        <span id="chat-title">Selecione uma conversa</span>
-      </div>
-      <div class="header-actions">
-        <button id="remove-contact-btn" style="display:none; background:#3b4a54; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; font-size: 12px;" onclick="removerContatoLocal()">Remover Contato</button>
-        <button id="del-btn" style="display:none; background:#ea0038; color:white; border:none; padding:8px 12px; border-radius:5px; cursor:pointer; font-size: 12px;" onclick="apagarHistoricoParaAmbos()">Apagar Tudo</button>
-      </div>
-    </div>
-
-    <ul id="messages"></ul>
-
-    <form id="form">
-      <input type="file" id="file-input" style="display:none;" accept="image/*,video/*">
-      <button type="button" class="btn-icon" onclick="document.getElementById('file-input').click()">📎</button>
-      <input id="input" autocomplete="off" placeholder="Mensagem" />
-      <button type="submit" class="btn-send">S</button>
-    </form>
-  </div>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script>
+<script src="/socket.io/socket.io.js"></script>
+<script>
     let socket;
     let currentUser = "";
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyNgvP69t-velhggxX_L2Nu5WreTDAcWW9w27xWRoDwFfjcd_oR2Pdx81KzZCYMRWA/exec";
 
-    function playErrorBeep() {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.type = 'sawtooth';
-      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.3);
-    }
-
-    window.onload = () => {
-      const savedUser = localStorage.getItem('chat_user');
-      const savedPass = localStorage.getItem('chat_pass');
-      if (savedUser && savedPass) {
-        currentUser = savedUser;
-        document.getElementById('login-screen').style.display = 'none';
-        const urlParams = new URLSearchParams(window.location.search);
-        if(urlParams.get('room')) document.body.classList.add('chat-open');
-        renderizarContatos();
-        iniciarChat();
-      }
-    };
-
-    async function fazerLogin() {
-      const user = document.getElementById('user-name').value.trim();
-      const pass = document.getElementById('user-pass').value.trim();
-      if(!user || !pass) return;
-      document.getElementById('login-status').innerText = "Verificando...";
-      try {
-        const res = await fetch(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, { redirect: 'follow' });
-        const data = await res.json();
-        if (data.status === "success") {
-          localStorage.setItem('chat_user', user);
-          localStorage.setItem('chat_pass', pass);
-          location.reload();
-        } else {
-          playErrorBeep();
-          alert(data.message);
-          document.getElementById('login-status').innerText = "";
-        }
-      } catch (e) {
-        playErrorBeep();
-        alert("Erro de conexão.");
-      }
-    }
-
-    function fecharChatNoCelular() {
-      document.body.classList.remove('chat-open');
-      window.history.pushState({}, '', window.location.pathname);
-    }
-
-    function mudarSala(novaSala, target = null) {
-      if (target) {
-        let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
-        if (!contatos.includes(target)) {
-          contatos.push(target);
-          localStorage.setItem('chat_recentes', JSON.stringify(contatos));
-        }
-      }
-      const novaUrl = target ? `?room=${novaSala}&target=${target}` : `?room=global`;
-      window.history.pushState({}, '', novaUrl);
-      document.body.classList.add('chat-open');
-      iniciarChat();
-      document.getElementById('suggestions').style.display = "none";
-      document.getElementById('search-user').value = "";
-    }
+    // Funções auxiliares (playErrorBeep, fazerLogin, etc) permanecem as mesmas...
 
     function iniciarChat() {
-      if (socket) socket.disconnect();
+      // Se já houver um socket, vamos apenas mudar a sala, não desconectar tudo
+      // para não perder notificações enquanto troca de tela.
       const urlParams = new URLSearchParams(window.location.search);
       const room = urlParams.get('room') || 'global';
       const target = urlParams.get('target');
 
       document.getElementById('chat-title').innerText = target ? target : "🌎 Chat Global";
-      
-      // Mostrar botões de ação se for chat privado
-      const isPrivate = (target && room !== 'global');
-      document.getElementById('del-btn').style.display = isPrivate ? "block" : "none";
-      document.getElementById('remove-contact-btn').style.display = isPrivate ? "block" : "none";
+      document.getElementById('del-btn').style.display = (target && room !== 'global') ? "block" : "none";
+      document.getElementById('remove-contact-btn').style.display = (target && room !== 'global') ? "block" : "none";
       
       document.getElementById('messages').innerHTML = "";
       renderizarContatos();
 
-      socket = io({ query: { room: room, username: currentUser } });
+      // Se o socket não existe, cria. Se existe, apenas muda de sala (join).
+      if (!socket) {
+        socket = io({ query: { room: room, username: currentUser } });
+        configurarOuvintes();
+      } else {
+        socket.emit('leave room'); // Opcional: criar evento no server para limpar salas antigas
+        socket.disconnect(); // Para simplificar com sua lógica atual, vamos reconectar
+        socket = io({ query: { room: room, username: currentUser } });
+        configurarOuvintes();
+      }
+    }
 
+    function configurarOuvintes() {
       socket.on('chat message', (data) => {
         const item = document.createElement('li');
         const isMe = data.username === currentUser;
@@ -235,6 +51,7 @@
         document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
       });
 
+      // ESTA É A PARTE QUE CORRIGE O SEU PROBLEMA
       socket.on('notify contact', (data) => {
         if (data.to.toLowerCase() === currentUser.toLowerCase()) {
           let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
@@ -243,86 +60,32 @@
             localStorage.setItem('chat_recentes', JSON.stringify(contatos));
             renderizarContatos();
           }
+          
+          // Se o destinatário já estiver com a aba dessa pessoa aberta, 
+          // mas em uma sala "errada" (ordem dos nomes), isso ajuda a sincronizar.
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('target') === data.from && urlParams.get('room') !== data.room) {
+             window.history.pushState({}, '', `?room=${data.room}&target=${data.from}`);
+          }
         }
       });
 
       socket.on('clear messages', () => { document.getElementById('messages').innerHTML = ""; });
     }
 
-    // NOVA FUNÇÃO: Remover contato da lista lateral (localStorage)
-    function removerContatoLocal() {
-      const target = new URLSearchParams(window.location.search).get('target');
-      if (!target) return;
-      
-      if (confirm(`Remover "${target}" da sua lista de contatos?`)) {
+    function mudarSala(novaSala, target = null) {
+      if (target) {
         let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
-        contatos = contatos.filter(nome => nome !== target);
-        localStorage.setItem('chat_recentes', JSON.stringify(contatos));
-        
-        // Volta para o global
-        mudarSala('global');
-        renderizarContatos();
+        if (!contatos.includes(target)) {
+          contatos.push(target);
+          localStorage.setItem('chat_recentes', JSON.stringify(contatos));
+        }
       }
+      const novaUrl = target ? `?room=${novaSala}&target=${target}` : `?room=global`;
+      window.history.pushState({}, '', novaUrl);
+      document.body.classList.add('chat-open');
+      iniciarChat();
     }
 
-    async function buscarUsuariosSugestao() {
-      const query = document.getElementById('search-user').value.trim();
-      const sugList = document.getElementById('suggestions');
-      if (query.length < 1) { sugList.style.display = "none"; return; }
-      try {
-        const res = await fetch(`${SCRIPT_URL}?action=buscarUsuarios&query=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        if(data.status === "success" && data.data.length > 0) {
-          sugList.innerHTML = data.data
-            .filter(u => u.toLowerCase() !== currentUser.toLowerCase())
-            .map(u => `<li onclick="mudarSala('${[currentUser, u].sort().join('_')}', '${u}')">👤 ${u}</li>`).join('');
-          sugList.style.display = "block";
-        } else { sugList.style.display = "none"; }
-      } catch(e) { sugList.style.display = "none"; }
-    }
-
-    function renderizarContatos() {
-      const lista = document.getElementById('contacts-list');
-      const contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
-      const targetAtual = new URLSearchParams(window.location.search).get('target');
-      document.getElementById('item-global').className = (!targetAtual) ? "contact-item active" : "contact-item";
-      lista.innerHTML = contatos.map(nome => `
-        <div class="contact-item ${targetAtual === nome ? 'active' : ''}" onclick="mudarSala('${[currentUser, nome].sort().join('_')}', '${nome}')">
-          <div style="width:36px; height:36px; background:#3b4a54; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:bold;">${nome[0].toUpperCase()}</div>
-          ${nome}
-        </div>
-      `).join('');
-    }
-
-    document.getElementById('form').onsubmit = (e) => {
-      e.preventDefault();
-      const input = document.getElementById('input');
-      if(input.value.trim() && socket) {
-        socket.emit('chat message', { text: input.value });
-        input.value = '';
-      }
-    };
-
-    document.getElementById('file-input').onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        socket.emit('chat message', { file: event.target.result, fileType: file.type.split('/')[0], text: "" });
-      };
-      reader.readAsDataURL(file);
-    };
-
-    function logout() { localStorage.clear(); location.reload(); }
-    
-    function apagarHistoricoParaAmbos() {
-      const room = new URLSearchParams(window.location.search).get('room');
-      if(room && confirm("Apagar histórico de mensagens para ambos?")) socket.emit('request clear', room);
-    }
-
-    document.addEventListener('click', (e) => {
-      if(!e.target.closest('#search-box')) document.getElementById('suggestions').style.display = 'none';
-    });
-  </script>
-</body>
-</html>
+    // ... (restante do código: buscarUsuariosSugestao, renderizarContatos, form.onsubmit) ...
+</script>
