@@ -95,8 +95,28 @@
   <script>
     let socket;
     let currentUser = "";
-    // URL ATUALIZADA
+    // URL atualizada com /exec conforme as imagens da sua implantação
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzr-AEnQMZfGCkg7auuFP5e2q5qkUq41Qt1SoKmLiPC8EmTR8poj2Wv2OPYsJEj2-zl/exec";
+
+    // Função para emitir o beep negativo (denied beep)
+    function playErrorBeep() {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.type = 'sawtooth';
+      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime); // Frequência baixa para som negativo
+      oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+      
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.3);
+    }
 
     window.onload = () => {
       const savedUser = localStorage.getItem('chat_user');
@@ -124,11 +144,14 @@
           localStorage.setItem('chat_pass', pass);
           location.reload();
         } else {
+          playErrorBeep(); // Beep negativo em caso de erro nos dados
           alert(data.message || "Erro no login");
           document.getElementById('login-status').innerText = "";
         }
       } catch (e) {
+        playErrorBeep(); // Beep negativo em caso de falha na conexão
         alert("Erro de conexão com o servidor de cadastro.");
+        document.getElementById('login-status').innerText = "";
       }
     }
 
@@ -168,12 +191,14 @@
       const novaUrl = target ? `?room=${novaSala}&target=${target}` : window.location.pathname;
       window.history.pushState({}, '', novaUrl);
       iniciarChat();
+      
       document.getElementById('suggestions').style.display = "none";
       document.getElementById('search-user').value = "";
     }
 
     function iniciarChat() {
       if (socket) socket.disconnect();
+      
       const urlParams = new URLSearchParams(window.location.search);
       const room = urlParams.get('room') || 'global';
       const target = urlParams.get('target');
@@ -189,13 +214,16 @@
         const item = document.createElement('li');
         const isMe = data.username === currentUser;
         item.className = `msg-box ${isMe ? 'sent' : 'received'}`;
+        
         let html = `<small style="display:block; font-weight:bold; opacity:0.6; margin-bottom:4px;">${data.username}</small>`;
+        
         if (data.file) {
           if (data.fileType === 'image') html += `<img src="${data.file}">`;
           else if (data.fileType === 'video') html += `<video src="${data.file}" controls></video>`;
         } else {
           html += `<span>${data.text}</span>`;
         }
+
         item.innerHTML = html;
         document.getElementById('messages').appendChild(item);
         document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
@@ -204,7 +232,6 @@
       socket.on('clear messages', () => { document.getElementById('messages').innerHTML = ""; });
     }
 
-    // BUSCA DE USUÁRIOS INTEGRADA COM O GOOGLE SCRIPT
     async function buscarUsuariosSugestao() {
       const query = document.getElementById('search-user').value.trim();
       const sugList = document.getElementById('suggestions');
@@ -227,7 +254,8 @@
           sugList.style.display = "none";
         }
       } catch(e) { 
-        console.error("Erro na busca de usuários");
+        console.error("Erro na busca"); 
+        sugList.style.display = "none";
       }
     }
 
