@@ -1,6 +1,8 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
@@ -8,10 +10,48 @@ const io = new Server(server, {
   maxHttpBufferSize: 1e8 // 100MB
 });
 
+// Remove headers que identificam a tecnologia do servidor
 app.disable('x-powered-by');
 
-// Mapeamento global de usuários online
+// URL Secreta puxada do arquivo .env (O front-end nunca verá isso)
+const SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL;
+
+if (!SCRIPT_URL) {
+    console.error("ERRO CRÍTICO: GOOGLE_SCRIPT_URL não definida no arquivo .env");
+    process.exit(1);
+}
+
 const usersOnline = {};
+
+// --- ROTAS PROXY DE SEGURANÇA ---
+
+// Rota de Login Blindada
+app.get('/api/login', async (req, res) => {
+    try {
+        const { user, pass } = req.query;
+        if (!user || !pass) return res.status(400).json({ status: "error", message: "Dados incompletos." });
+
+        const response = await axios.get(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ status: "error", message: "Falha de comunicação com o núcleo." });
+    }
+});
+
+// Rota de Busca de Usuários Blindada
+app.get('/api/search', async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query) return res.json({ status: "success", data: [] });
+
+        const response = await axios.get(`${SCRIPT_URL}?action=buscarUsuarios&query=${encodeURIComponent(query)}`);
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ status: "error", data: [] });
+    }
+});
+
+// --------------------------------
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
@@ -34,7 +74,7 @@ io.on('connection', (socket) => {
       fileType: data.fileType || null,
       username: username,
       room: room,
-      isSystem: data.isSystem || false // Suporte para mensagens de sistema/ping
+      isSystem: data.isSystem || false 
     };
 
     io.to(room).emit('chat message', messageData);
@@ -67,5 +107,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Servidor rodando na porta ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT} | Modo de Segurança Ativo`);
 });
