@@ -4,12 +4,14 @@ const { Server } = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-
 const io = new Server(server, {
   maxHttpBufferSize: 1e8 // 100MB
 });
 
 app.disable('x-powered-by');
+
+// Mapeamento global de usuários online
+const usersOnline = {};
 
 app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
@@ -19,6 +21,11 @@ io.on('connection', (socket) => {
   const room = socket.handshake.query.room || 'global';
   const username = socket.handshake.query.username || 'Anônimo';
   
+  // Registra o socket do usuário
+  if (username !== 'Anônimo') {
+    usersOnline[username] = socket.id;
+  }
+
   socket.join(room);
 
   socket.on('chat message', (data) => {
@@ -30,19 +37,23 @@ io.on('connection', (socket) => {
       room: room
     };
 
-    // 1. Envia para quem está na sala aberta
+    // 1. Envia para quem já está na sala
     io.to(room).emit('chat message', messageData);
 
-    // 2. Lógica de Notificação para o destinatário (fora da sala)
+    // 2. Notificação Global (para chats privados)
     if (room.includes('_')) {
       const partes = room.split('_');
       const destinatario = partes.find(name => name !== username);
       
-      // Envia um alerta para o destinatário adicionar o contato à lista
-      io.emit('notify contact', {
-        to: destinatario,
-        from: username
-      });
+      // Se o destinatário estiver online, envia notificação direta para o socket dele
+      const targetSocketId = usersOnline[destinatario];
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('notify contact', {
+          to: destinatario,
+          from: username,
+          room: room // Envia a sala para o destinatário saber onde entrar
+        });
+      }
     }
   });
 
@@ -51,6 +62,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    if (usersOnline[username] === socket.id) {
+      delete usersOnline[username];
+    }
     socket.leave(room);
   });
 });
