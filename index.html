@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Chat Privado Pro - Cyber Cyan Edition</title>
+  <title>Chat Privado Pro - Cyber Cyan</title>
   <style>
-    /* Estilo Geral Cyberpunk - Unificado em Ciano */
     :root {
       --bg-dark: #050505;
       --panel-dark: #0d1117;
@@ -16,187 +15,40 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Roboto, sans-serif; background: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+    #sidebar { width: 320px; background: var(--panel-dark); border-right: 2px solid var(--neon-border); display: flex; flex-direction: column; }
+    .sidebar-header { padding: 20px; background: #161b22; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--neon-cyan); }
     
-    body { 
-      font-family: 'Segoe UI', Roboto, sans-serif; 
-      background: var(--bg-dark); 
-      color: var(--text-main); 
-      display: flex; 
-      height: 100vh; 
-      overflow: hidden; 
-    }
-
-    /* Sidebar com efeito Neon Ciano */
-    #sidebar { 
-      width: 320px; 
-      background: var(--panel-dark); 
-      border-right: 2px solid var(--neon-border); 
-      display: flex; 
-      flex-direction: column; 
-      box-shadow: 5px 0 15px rgba(0, 242, 255, 0.05);
-    }
-
-    .sidebar-header { 
-      padding: 20px; 
-      background: #161b22; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      border-bottom: 1px solid var(--neon-cyan);
-    }
-
-    #search-box { padding: 15px; background: var(--panel-dark); }
-    
-    #search-user { 
-      width: 100%; 
-      background: #161b22; 
-      border: 1px solid var(--neon-border); 
-      padding: 12px; 
-      border-radius: 4px; 
-      color: white; 
-      outline: none; 
-      transition: 0.3s;
-    }
-    #search-user:focus { 
-      border-color: var(--neon-cyan); 
-      box-shadow: 0 0 10px var(--neon-cyan-glow); 
-    }
-
-    .section-title { 
-      padding: 15px; 
-      font-size: 11px; 
-      color: var(--neon-cyan); 
-      text-transform: uppercase; 
-      letter-spacing: 2px; 
-    }
+    #search-user { width: 100%; background: #161b22; border: 1px solid var(--neon-border); padding: 12px; border-radius: 4px; color: white; outline: none; transition: 0.3s; }
+    #search-user:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan-glow); }
 
     #contacts-list { flex: 1; overflow-y: auto; }
-    
-    .contact-item { 
-      padding: 15px; 
-      cursor: pointer; 
-      border-bottom: 1px solid rgba(255,255,255,0.05); 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      transition: 0.3s;
-    }
-    .contact-item:hover { background: rgba(0, 242, 255, 0.05); }
-    .contact-item.active { 
-      background: linear-gradient(90deg, rgba(0, 242, 255, 0.1), transparent);
-      border-left: 3px solid var(--neon-cyan); 
-    }
+    .contact-item { padding: 15px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; gap: 12px; }
+    .contact-item.active { background: linear-gradient(90deg, rgba(0, 242, 255, 0.1), transparent); border-left: 3px solid var(--neon-cyan); }
 
-    /* Área de Chat */
     #chat-area { flex: 1; display: flex; flex-direction: column; background: #000; }
+    #chat-header { padding: 15px; background: #0d1117; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--neon-border); }
+
+    #messages { flex: 1; overflow-y: auto; padding: 20px; background: #000; display: flex; flex-direction: column; gap: 15px; list-style: none; }
     
-    #chat-header { 
-      padding: 15px; 
-      background: #0d1117; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      border-bottom: 1px solid var(--neon-border);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-    }
+    .msg-box { max-width: 75%; padding: 10px 15px; border-radius: 8px; font-size: 15px; border: 1px solid transparent; word-wrap: break-word; }
+    .sent { align-self: flex-end; background: rgba(0, 242, 255, 0.1); border-color: var(--neon-cyan); box-shadow: 0 0 8px rgba(0, 242, 255, 0.2); }
+    .received { align-self: flex-start; background: rgba(255, 255, 255, 0.05); border-color: #444; }
 
-    #messages { 
-      flex: 1; 
-      overflow-y: auto; 
-      padding: 20px; 
-      background: #000; 
-      display: flex; 
-      flex-direction: column; 
-      gap: 15px; 
-    }
+    /* ESTILO DO NOME DO USUÁRIO CORRIGIDO */
+    .user-clickable { display: block; font-weight: bold; color: #000 !important; font-size: 13px !important; margin-bottom: 5px; cursor: pointer; text-transform: uppercase; background: var(--neon-cyan); padding: 2px 6px; border-radius: 3px; width: fit-content; }
 
-    /* Balões de Mensagem */
-    .msg-box { 
-      max-width: 75%; 
-      padding: 10px 15px; 
-      border-radius: 8px; 
-      position: relative; 
-      font-size: 15px;
-      border: 1px solid transparent;
-    }
+    .system-msg { align-self: center; border: 1px solid var(--neon-cyan); color: var(--neon-cyan); font-size: 11px; padding: 4px 12px; border-radius: 4px; text-transform: uppercase; background: rgba(0, 242, 255, 0.05); }
 
-    .sent { 
-      align-self: flex-end; 
-      background: rgba(0, 242, 255, 0.1); 
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 8px rgba(0, 242, 255, 0.2);
-    }
+    #form { padding: 15px; background: #0d1117; border-top: 1px solid var(--neon-border); display: flex; gap: 10px; }
+    #input { flex: 1; background: #161b22; border: 1px solid var(--neon-border); padding: 12px 20px; border-radius: 4px; color: white; outline: none; }
+    .btn-send { background: var(--neon-cyan); color: #000; border: none; padding: 0 20px; border-radius: 4px; font-weight: bold; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 10px var(--neon-cyan); }
 
-    .received { 
-      align-self: flex-start; 
-      background: rgba(255, 255, 255, 0.05); 
-      border-color: #444;
-      box-shadow: 0 0 5px rgba(255, 255, 255, 0.05);
-    }
+    #login-screen { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+    .login-input { padding: 15px; margin: 10px; width: 300px; background: transparent; border: 1px solid var(--neon-cyan); color: white; border-radius: 4px; text-align: center; outline: none; }
 
-    .system-msg { 
-      align-self: center; 
-      border: 1px solid var(--neon-cyan);
-      color: var(--neon-cyan);
-      font-size: 11px; 
-      padding: 4px 12px; 
-      border-radius: 4px; 
-      text-transform: uppercase;
-      background: rgba(0, 242, 255, 0.05);
-      letter-spacing: 1px;
-    }
-
-    /* Rodapé */
-    #form { 
-      padding: 15px; 
-      background: #0d1117; 
-      border-top: 1px solid var(--neon-border);
-      display: flex; 
-      gap: 10px; 
-    }
-
-    #input { 
-      flex: 1; 
-      background: #161b22; 
-      border: 1px solid var(--neon-border); 
-      padding: 12px 20px; 
-      border-radius: 4px; 
-      color: white; 
-      outline: none; 
-    }
-
-    .btn-send { 
-      background: var(--neon-cyan); 
-      color: #000; 
-      border: none; 
-      padding: 0 20px; 
-      border-radius: 4px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      text-transform: uppercase;
-      box-shadow: 0 0 10px var(--neon-cyan);
-    }
-
-    /* Login Screen */
-    #login-screen { 
-      position: fixed; inset: 0; background: #000; 
-      display: flex; flex-direction: column; align-items: center; justify-content: center; 
-      z-index: 1000; 
-    }
-    .login-input { 
-      padding: 15px; margin: 10px; width: 300px; 
-      background: transparent; border: 1px solid var(--neon-cyan); 
-      color: white; border-radius: 4px; text-align: center;
-      outline: none;
-    }
-    .login-input:focus { box-shadow: 0 0 15px var(--neon-cyan-glow); }
-
-    @media (max-width: 768px) {
-      #sidebar { width: 100%; position: absolute; height: 100%; z-index: 5; }
-      #chat-area { width: 100%; position: absolute; height: 100%; z-index: 1; display: none; }
-      body.chat-open #sidebar { display: none; }
-      body.chat-open #chat-area { display: flex; }
-    }
+    @media (max-width: 768px) { #sidebar { width: 100%; position: absolute; height: 100%; z-index: 5; } #chat-area { width: 100%; position: absolute; height: 100%; z-index: 1; display: none; } body.chat-open #sidebar { display: none; } body.chat-open #chat-area { display: flex; } }
   </style>
 </head>
 <body>
@@ -221,12 +73,12 @@
     </div>
     <div id="search-box">
       <input id="search-user" placeholder="BUSCAR USUÁRIO..." oninput="buscarUsuariosSugestao()" autocomplete="off">
-      <ul id="suggestions" style="position: absolute; background: #161b22; width: 290px; border: 1px solid var(--neon-cyan); z-index: 100; list-style: none; display: none; box-shadow: 0 0 15px black;"></ul>
+      <ul id="suggestions" style="position: absolute; background: #161b22; width: 290px; border: 1px solid var(--neon-cyan); z-index: 100; list-style: none; display: none;"></ul>
     </div>
     <div class="contact-item" onclick="mudarSala('global')" id="item-global">
       <span style="color: var(--neon-cyan); font-weight: bold;">#</span> CHAT GLOBAL
     </div>
-    <div class="section-title">UPLOADS_RECENTES</div>
+    <div class="section-title">RECENT_UPLOADS</div>
     <div id="contacts-list"></div>
   </div>
 
@@ -250,25 +102,18 @@
     </form>
   </div>
 
-  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
     let socket;
     let currentUser = "";
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwyNgvP69t-velhggxX_L2Nu5WreTDAcWW9w27xWRoDwFfjcd_oR2Pdx81KzZCYMRWA/exec";
 
     function playErrorBeep() {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const oscillator = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
-      oscillator.type = 'sawtooth';
-      oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.3);
+      oscillator.type = 'sawtooth'; oscillator.frequency.setValueAtTime(150, audioCtx.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination); oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.3);
     }
 
     window.onload = () => {
@@ -277,8 +122,7 @@
       if (savedUser && savedPass) {
         currentUser = savedUser;
         document.getElementById('login-screen').style.display = 'none';
-        renderizarContatos();
-        iniciarChat();
+        renderizarContatos(); iniciarChat();
       }
     };
 
@@ -288,26 +132,13 @@
       if(!user || !pass) return;
       document.getElementById('login-status').innerText = "CONECTANDO...";
       try {
-        const res = await fetch(`${SCRIPT_URL}?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`, { redirect: 'follow' });
+        const res = await fetch(`/api/login?user=${encodeURIComponent(user)}&pass=${encodeURIComponent(pass)}`);
         const data = await res.json();
         if (data.status === "success") {
-          localStorage.setItem('chat_user', user);
-          localStorage.setItem('chat_pass', pass);
+          localStorage.setItem('chat_user', user); localStorage.setItem('chat_pass', pass);
           location.reload();
-        } else {
-          playErrorBeep();
-          alert(data.message);
-          document.getElementById('login-status').innerText = "";
-        }
-      } catch (e) {
-        playErrorBeep();
-        alert("ERRO_DE_CONEXÃO");
-      }
-    }
-
-    function fecharChatNoCelular() {
-      document.body.classList.remove('chat-open');
-      window.history.pushState({}, '', window.location.pathname);
+        } else { playErrorBeep(); alert(data.message); document.getElementById('login-status').innerText = ""; }
+      } catch (e) { playErrorBeep(); alert("ERRO_DE_CONEXÃO"); }
     }
 
     function iniciarChat() {
@@ -328,58 +159,22 @@
       socket.on('chat message', (data) => {
         const item = document.createElement('li');
         const isMe = data.username === currentUser;
-        
         if (data.isSystem) {
           item.className = "system-msg";
           item.innerHTML = `<span>${data.text}</span>`;
         } else {
           item.className = `msg-box ${isMe ? 'sent' : 'received'}`;
-          let html = `<small class="user-clickable" onclick="abrirMenuPerfil(event, '${data.username}')" style="display:block; font-weight:bold; color:var(--neon-cyan); opacity:0.8; margin-bottom:4px; font-size:10px; cursor:pointer;">> ${data.username}</small>`;
+          let html = `<small class="user-clickable" onclick="abrirMenuPerfil(event, '${data.username}')">${data.username}</small>`;
           if (data.file) {
             if (data.fileType === 'image') html += `<img src="${data.file}" style="max-width:100%; border-radius:4px; border:1px solid var(--neon-cyan)">`;
             else if (data.fileType === 'video') html += `<video src="${data.file}" controls style="max-width:100%"></video>`;
-          } else {
-            html += `<span>${data.text}</span>`;
-          }
+          } else { html += `<span>${data.text}</span>`; }
           item.innerHTML = html;
         }
         document.getElementById('messages').appendChild(item);
         document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
       });
-
-      socket.on('notify contact', (data) => {
-        if (data.to.toLowerCase() === currentUser.toLowerCase()) {
-          salvarContatoSilencioso(data.from);
-        }
-      });
       socket.on('clear messages', () => { document.getElementById('messages').innerHTML = ""; });
-    }
-
-    function abrirMenuPerfil(event, nome) {
-      event.preventDefault();
-      if (nome === currentUser) return;
-      const menu = document.getElementById('profile-menu');
-      menu.style.display = 'block';
-      menu.style.top = event.pageY + 'px';
-      menu.style.left = event.pageX + 'px';
-      document.getElementById('btn-conversa').onclick = () => {
-        const r = [currentUser, nome].sort().join('_');
-        mudarSala(r, nome, true);
-        menu.style.display = 'none';
-      };
-      document.getElementById('btn-salvar').onclick = () => {
-        salvarContatoSilencioso(nome);
-        menu.style.display = 'none';
-      };
-    }
-
-    function salvarContatoSilencioso(nome) {
-      let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
-      if (!contatos.includes(nome)) {
-        contatos.push(nome);
-        localStorage.setItem('chat_recentes', JSON.stringify(contatos));
-        renderizarContatos();
-      }
     }
 
     function mudarSala(novaSala, target = null, autoPing = false) {
@@ -389,14 +184,8 @@
       document.body.classList.add('chat-open');
       iniciarChat();
       if (autoPing && target) {
-        setTimeout(() => {
-          if (socket && socket.connected) {
-            socket.emit('chat message', { text: `ACESSO_PERMITIDO: ${currentUser} entrou no canal.`, isSystem: true });
-          }
-        }, 600);
+        setTimeout(() => { if (socket && socket.connected) socket.emit('chat message', { text: `ACESSO_PERMITIDO: ${currentUser} entrou.`, isSystem: true }); }, 600);
       }
-      document.getElementById('suggestions').style.display = "none";
-      document.getElementById('search-user').value = "";
     }
 
     async function buscarUsuariosSugestao() {
@@ -404,15 +193,10 @@
       const sugList = document.getElementById('suggestions');
       if (query.length < 1) { sugList.style.display = "none"; return; }
       try {
-        const res = await fetch(`${SCRIPT_URL}?action=buscarUsuarios&query=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
         const data = await res.json();
         if(data.status === "success" && data.data.length > 0) {
-          sugList.innerHTML = data.data
-            .filter(u => u.toLowerCase() !== currentUser.toLowerCase())
-            .map(u => {
-              const r = [currentUser, u].sort().join('_');
-              return `<li style="padding:10px; cursor:pointer; border-bottom:1px solid #333; color:white;" onclick="mudarSala('${r}', '${u}', true)">ID: ${u}</li>`;
-            }).join('');
+          sugList.innerHTML = data.data.filter(u => u.toLowerCase() !== currentUser.toLowerCase()).map(u => `<li style="padding:10px; cursor:pointer; color:white; border-bottom:1px solid #333;" onclick="mudarSala('${[currentUser, u].sort().join('_')}', '${u}', true)">ID: ${u}</li>`).join('');
           sugList.style.display = "block";
         } else { sugList.style.display = "none"; }
       } catch(e) { sugList.style.display = "none"; }
@@ -422,7 +206,6 @@
       const lista = document.getElementById('contacts-list');
       const contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]");
       const targetAtual = new URLSearchParams(window.location.search).get('target');
-      document.getElementById('item-global').className = (!targetAtual) ? "contact-item active" : "contact-item";
       lista.innerHTML = contatos.map(nome => `
         <div class="contact-item ${targetAtual === nome ? 'active' : ''}" onclick="mudarSala('${[currentUser, nome].sort().join('_')}', '${nome}')">
           <div style="width:30px; height:30px; border:1px solid var(--neon-cyan); border-radius:2px; display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--neon-cyan);">${nome[0].toUpperCase()}</div>
@@ -431,46 +214,25 @@
       `).join('');
     }
 
-    function removerContatoLocal() {
-      const target = new URLSearchParams(window.location.search).get('target');
-      if (!target || !confirm(`REMOVER ${target} DA LISTA RECENTE?`)) return;
-      let contatos = JSON.parse(localStorage.getItem('chat_recentes') || "[]").filter(n => n !== target);
-      localStorage.setItem('chat_recentes', JSON.stringify(contatos));
-      mudarSala('global');
-    }
-
     document.getElementById('form').onsubmit = (e) => {
-      e.preventDefault();
-      const input = document.getElementById('input');
-      if(input.value.trim() && socket) {
-        socket.emit('chat message', { text: input.value });
-        input.value = '';
-      }
+      e.preventDefault(); const input = document.getElementById('input');
+      if(input.value.trim() && socket) { socket.emit('chat message', { text: input.value }); input.value = ''; }
     };
 
-    document.getElementById('file-input').onchange = (e) => {
-      const file = e.target.files[0];
-      if (!file || !socket) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        socket.emit('chat message', { file: event.target.result, fileType: file.type.split('/')[0], text: "" });
-      };
-      reader.readAsDataURL(file);
-    };
-
-    function logout() { localStorage.clear(); location.reload(); }
-    
     function apagarHistoricoParaAmbos() {
       const room = new URLSearchParams(window.location.search).get('room');
-      if(room && confirm("APAGAR TODAS AS MENSAGENS PARA AMBOS? (Esta ação é irreversível)")) {
-        socket.emit('request clear', room);
-      }
+      if(room && confirm("APAGAR TODAS AS MENSAGENS PARA AMBOS?")) socket.emit('request clear', room);
     }
 
-    document.addEventListener('click', (e) => {
-      if(!e.target.closest('#search-box')) document.getElementById('suggestions').style.display = 'none';
-      if(!e.target.closest('.user-clickable') && !e.target.closest('#profile-menu')) document.getElementById('profile-menu').style.display = 'none';
-    });
+    function logout() { localStorage.clear(); location.reload(); }
+    function fecharChatNoCelular() { document.body.classList.remove('chat-open'); window.history.pushState({}, '', window.location.pathname); }
+
+    /* OMNIGUARD - PROTEÇÃO ATIVA */
+    (function() {
+        document.addEventListener('keydown', e => { if (e.key === "F12" || (e.ctrlKey && e.shiftKey && "IJC".includes(e.key)) || (e.ctrlKey && e.key === "U")) { e.preventDefault(); playErrorBeep(); return false; } });
+        setInterval(() => { (function() { (function() { debugger; }()); }()); }, 500);
+        document.addEventListener('contextmenu', e => { e.preventDefault(); playErrorBeep(); });
+    })();
   </script>
 </body>
 </html>
