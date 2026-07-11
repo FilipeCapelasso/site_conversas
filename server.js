@@ -1,1080 +1,652 @@
-<!DOCTYPE html>
-<html lang="pt-br" data-theme="cyan">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>CyberChat Pro</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-/* ============================================================
-   TOKENS
-   Um único par de variáveis (--accent / --accent-soft) governa
-   todos os temas. Trocar o tema = trocar 4 valores no :root.
-   ============================================================ */
-:root{
-  --bg:#05070a;
-  --panel:#0b0f14;
-  --panel-2:#111820;
-  --line:rgba(255,255,255,.07);
-  --text:#e6edf3;
-  --muted:#7d8896;
-  --radius:14px;
-  --accent:#00e5ff;
-  --accent-ink:#001014;
-  --accent-soft:rgba(0,229,255,.12);
-  --accent-line:rgba(0,229,255,.32);
-  --glow:rgba(0,229,255,.35);
-  --font-display:'Chakra Petch',system-ui,sans-serif;
-  --font-body:'Inter',system-ui,sans-serif;
-}
-[data-theme="purple"] { --accent:#a855f7; --accent-ink:#12001f; --accent-soft:rgba(168,85,247,.14); --accent-line:rgba(168,85,247,.34); --glow:rgba(168,85,247,.4); }
-[data-theme="matrix"] { --accent:#3ddc84; --accent-ink:#00140a; --accent-soft:rgba(61,220,132,.12); --accent-line:rgba(61,220,132,.32); --glow:rgba(61,220,132,.35); }
-[data-theme="sunset"] { --accent:#ff8c42; --accent-ink:#1a0a00; --accent-soft:rgba(255,140,66,.13); --accent-line:rgba(255,140,66,.33); --glow:rgba(255,140,66,.38); }
-[data-theme="crimson"]{ --accent:#ff3b5c; --accent-ink:#1a0006; --accent-soft:rgba(255,59,92,.13); --accent-line:rgba(255,59,92,.33); --glow:rgba(255,59,92,.38); }
+require('dotenv').config();
 
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{height:100%}
-body{
-  font-family:var(--font-body);
-  background:var(--bg);
-  color:var(--text);
-  display:flex;
-  overflow:hidden;
-  -webkit-font-smoothing:antialiased;
-  transition:background .4s ease;
-}
-/* Atmosfera: um halo do accent no fundo. Muda junto com o tema. */
-body::before{
-  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:
-    radial-gradient(700px 400px at 12% -10%, var(--accent-soft), transparent 70%),
-    radial-gradient(600px 500px at 105% 110%, var(--accent-soft), transparent 70%);
-  transition:background .5s ease;
-}
-button,input,textarea{font-family:inherit;color:inherit}
-button{cursor:pointer;background:none;border:none}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-thumb{background:var(--accent-line);border-radius:99px}
-::selection{background:var(--accent);color:var(--accent-ink)}
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { Server } = require('socket.io');
+const { createClient } = require('@supabase/supabase-js');
 
-/* ============================ SIDEBAR ============================ */
-#sidebar{
-  width:340px;flex-shrink:0;background:var(--panel);
-  border-right:1px solid var(--line);
-  display:flex;flex-direction:column;position:relative;z-index:2;
-}
-.brand{
-  padding:20px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--line);
-}
-.brand h1{
-  font-family:var(--font-display);font-size:17px;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--accent);text-shadow:0 0 18px var(--glow);
-}
-.brand h1 span{color:var(--text);text-shadow:none}
+// ============================================================
+// CONFIG
+// ============================================================
+const {
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY,
+  JWT_SECRET,
+  PORT = 3000,
+} = process.env;
 
-.me{
-  display:flex;align-items:center;gap:12px;padding:14px 20px;
-  border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s;
-}
-.me:hover{background:var(--panel-2)}
-.me-info{flex:1;min-width:0}
-.me-name{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.me-tag{font-size:11px;color:var(--muted);font-family:var(--font-display);letter-spacing:.05em}
-.me-edit{font-size:11px;color:var(--accent);border:1px solid var(--accent-line);padding:5px 10px;border-radius:8px;transition:.2s}
-.me:hover .me-edit{background:var(--accent);color:var(--accent-ink)}
-
-.avatar{
-  width:38px;height:38px;border-radius:12px;flex-shrink:0;object-fit:cover;
-  background:var(--accent-soft);border:1px solid var(--accent-line);
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--font-display);font-weight:700;color:var(--accent);font-size:15px;
-}
-.avatar.sm{width:30px;height:30px;border-radius:9px;font-size:12px}
-
-.search-wrap{padding:14px 16px;position:relative}
-.search-wrap input{
-  width:100%;background:var(--panel-2);border:1px solid var(--line);
-  padding:12px 14px;border-radius:10px;outline:none;font-size:14px;transition:.25s;
-}
-.search-wrap input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-#suggestions{
-  position:absolute;left:16px;right:16px;top:58px;z-index:40;
-  background:var(--panel-2);border:1px solid var(--accent-line);border-radius:12px;
-  list-style:none;overflow:hidden;display:none;
-  box-shadow:0 18px 40px rgba(0,0,0,.6);
-  animation:pop .18s ease-out;
-}
-#suggestions li{padding:11px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .15s}
-#suggestions li:hover{background:var(--accent-soft)}
-
-.rail-label{
-  padding:14px 20px 8px;font-family:var(--font-display);font-size:10px;
-  letter-spacing:.2em;text-transform:uppercase;color:var(--muted);
-}
-#contacts{flex:1;overflow-y:auto;padding-bottom:20px}
-
-.room{
-  display:flex;align-items:center;gap:12px;padding:12px 18px;cursor:pointer;
-  border-left:3px solid transparent;transition:background .2s,border-color .2s,transform .12s;
-}
-.room:hover{background:var(--panel-2);transform:translateX(2px)}
-.room.active{background:linear-gradient(90deg,var(--accent-soft),transparent);border-left-color:var(--accent)}
-.room-body{flex:1;min-width:0}
-.room-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.room-sub{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dot-unread{width:8px;height:8px;border-radius:99px;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 1.4s infinite}
-.online-ring{position:relative}
-.online-ring::after{
-  content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:99px;
-  background:var(--accent);border:2px solid var(--panel);
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY || !JWT_SECRET) {
+  console.error('Faltam variáveis no .env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET');
+  process.exit(1);
 }
 
-/* ============================ CHAT ============================ */
-#chat{flex:1;display:flex;flex-direction:column;min-width:0;position:relative;z-index:1}
-#chat-header{
-  padding:14px 20px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--line);background:rgba(11,15,20,.7);backdrop-filter:blur(12px);
-}
-.head-left{display:flex;align-items:center;gap:12px;min-width:0}
-#chat-title{font-family:var(--font-display);font-size:15px;letter-spacing:.08em;text-transform:uppercase}
-#chat-status{font-size:11px;color:var(--muted);height:14px}
-#back{display:none;font-size:22px;color:var(--accent);line-height:1}
-.head-actions{display:flex;gap:8px}
-.ghost-btn{
-  font-size:11px;color:var(--muted);border:1px solid var(--line);
-  padding:7px 12px;border-radius:8px;transition:.2s;white-space:nowrap;
-}
-.ghost-btn:hover{color:var(--accent);border-color:var(--accent-line);background:var(--accent-soft)}
-.ghost-btn.danger:hover{color:#ff6b6b;border-color:rgba(255,107,107,.4);background:rgba(255,107,107,.08)}
+const MEDIA_BUCKET = 'chat-media';
+const MAX_FILE_BYTES = 100 * 1024 * 1024; // 100 MB
+const HISTORY_LIMIT = 60;
 
-#messages{
-  flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:4px;list-style:none;
-  scroll-behavior:smooth;
-}
-#load-more{align-self:center;margin-bottom:12px}
+const ALLOWED_MIME = {
+  'image/jpeg': { ext: 'jpg', kind: 'image' },
+  'image/png': { ext: 'png', kind: 'image' },
+  'image/webp': { ext: 'webp', kind: 'image' },
+  'image/gif': { ext: 'gif', kind: 'image' },
+  'video/mp4': { ext: 'mp4', kind: 'video' },
+  'video/webm': { ext: 'webm', kind: 'video' },
+  'video/quicktime': { ext: 'mov', kind: 'video' },
+};
 
-.msg{display:flex;gap:10px;max-width:76%;animation:rise .32s cubic-bezier(.2,.8,.25,1) both}
-.msg.me{align-self:flex-end;flex-direction:row-reverse}
-.msg.them{align-self:flex-start}
-.msg.stacked{margin-top:-2px}
-.msg.stacked .avatar{visibility:hidden}
-.msg.stacked .who{display:none}
+const VALID_THEMES = ['cyan', 'purple', 'matrix', 'sunset', 'crimson'];
 
-.bubble{
-  background:var(--panel-2);border:1px solid var(--line);
-  padding:10px 14px;border-radius:16px;font-size:14.5px;line-height:1.5;
-  word-break:break-word;position:relative;transition:transform .15s;
-}
-.msg.them .bubble{border-bottom-left-radius:5px}
-.msg.me   .bubble{
-  border-bottom-right-radius:5px;
-  background:linear-gradient(135deg,var(--accent-soft),rgba(255,255,255,.02));
-  border-color:var(--accent-line);
-  box-shadow:0 0 24px -6px var(--glow);
-}
-.bubble:hover{transform:translateY(-1px)}
-.who{
-  font-size:12px;font-weight:600;color:var(--accent);margin-bottom:3px;
-  cursor:pointer;display:inline-block;
-}
-.who:hover{text-decoration:underline}
-.who .handle{color:var(--muted);font-weight:400;font-size:11px;margin-left:5px}
-.time{font-size:10px;color:var(--muted);margin-top:4px;text-align:right;opacity:.7}
+// Cliente com service_role: roda só no servidor, bypassa RLS.
+const db = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false },
+});
 
-.media{
-  display:block;max-width:340px;width:100%;border-radius:12px;margin-top:2px;
-  border:1px solid var(--accent-line);cursor:zoom-in;background:#000;
-}
-.msg .media + span{display:block;margin-top:8px}
+// ============================================================
+// APP
+// ============================================================
+const app = express();
+app.disable('x-powered-by');
+app.use(express.json({ limit: '1mb' })); // mídia não passa por HTTP, vai por socket
 
-.system{
-  align-self:center;font-family:var(--font-display);font-size:10.5px;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--accent);background:var(--accent-soft);
-  border:1px solid var(--accent-line);padding:5px 14px;border-radius:99px;margin:8px 0;
-  animation:rise .3s both;
-}
-#typing{
-  height:20px;padding:0 26px 6px;font-size:12px;color:var(--muted);font-style:italic;
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  maxHttpBufferSize: MAX_FILE_BYTES + 2 * 1024 * 1024, // folga para o envelope base64
+  pingTimeout: 60000,          // uploads longos não derrubam a conexão
+  pingInterval: 25000,
+  perMessageDeflate: false,    // binário já vem comprimido; deflate só gasta CPU
+  cors: { origin: false },
+});
+
+// ============================================================
+// HELPERS
+// ============================================================
+const USERNAME_RE = /^[a-zA-Z0-9._-]{3,24}$/;
+
+function signToken(user) {
+  return jwt.sign(
+    { sub: user.id, username: user.username },
+    JWT_SECRET,
+    { expiresIn: '30d' }
+  );
 }
 
-/* ============================ COMPOSER ============================ */
-#composer{
-  padding:14px 18px;border-top:1px solid var(--line);
-  background:rgba(11,15,20,.8);backdrop-filter:blur(12px);
-}
-#preview{display:none;margin-bottom:10px;position:relative;width:fit-content;animation:pop .2s}
-#preview img,#preview video{max-height:120px;border-radius:10px;border:1px solid var(--accent-line);display:block}
-#preview button{
-  position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:99px;
-  background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:13px;line-height:1;
-}
-.composer-row{display:flex;gap:10px;align-items:center}
-.attach{
-  width:44px;height:44px;flex-shrink:0;border-radius:12px;border:1px solid var(--line);
-  color:var(--accent);font-size:22px;transition:.2s;display:flex;align-items:center;justify-content:center;
-}
-.attach:hover{background:var(--accent-soft);border-color:var(--accent-line);transform:rotate(90deg)}
-#input{
-  flex:1;background:var(--panel-2);border:1px solid var(--line);
-  padding:13px 18px;border-radius:12px;outline:none;font-size:14.5px;transition:.25s;
-}
-#input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.send{
-  height:44px;padding:0 22px;border-radius:12px;background:var(--accent);color:var(--accent-ink);
-  font-family:var(--font-display);font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-  font-size:12px;box-shadow:0 0 22px -4px var(--glow);transition:.2s;
-}
-.send:hover{transform:translateY(-1px);box-shadow:0 0 30px -2px var(--glow)}
-.send:active{transform:translateY(1px)}
-.send:disabled{opacity:.45;cursor:not-allowed;transform:none}
-
-/* ============================ MODAIS ============================ */
-.overlay{
-  position:fixed;inset:0;z-index:100;background:rgba(2,4,6,.82);backdrop-filter:blur(8px);
-  display:none;align-items:center;justify-content:center;padding:20px;
-}
-.overlay.open{display:flex;animation:fade .2s}
-.card{
-  width:100%;max-width:420px;background:var(--panel);border:1px solid var(--accent-line);
-  border-radius:20px;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.7),0 0 60px -30px var(--glow);
-  animation:pop .28s cubic-bezier(.2,.9,.3,1);
-}
-.card h2{font-family:var(--font-display);font-size:19px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
-.card p.hint{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
-.field{margin-top:18px}
-.field label{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;font-family:var(--font-display)}
-.field input{
-  width:100%;background:var(--panel-2);border:1px solid var(--line);
-  padding:13px 14px;border-radius:10px;outline:none;font-size:14px;transition:.25s;
-}
-.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-.primary{
-  width:100%;margin-top:22px;height:48px;border-radius:12px;background:var(--accent);color:var(--accent-ink);
-  font-family:var(--font-display);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:13px;
-  box-shadow:0 0 26px -6px var(--glow);transition:.2s;
-}
-.primary:hover{transform:translateY(-2px);box-shadow:0 0 34px -4px var(--glow)}
-.primary:disabled{opacity:.5;transform:none;cursor:not-allowed}
-.text-btn{margin-top:14px;width:100%;text-align:center;font-size:12px;color:var(--muted)}
-.text-btn:hover{color:var(--accent)}
-.status{margin-top:14px;min-height:18px;font-size:12.5px;text-align:center;color:var(--accent)}
-.status.err{color:#ff6b6b}
-
-/* Seletor de temas — a assinatura visual do produto */
-.swatches{display:flex;gap:10px;margin-top:10px}
-.swatch{
-  width:38px;height:38px;border-radius:11px;border:2px solid transparent;position:relative;
-  transition:transform .18s cubic-bezier(.2,.9,.3,1),box-shadow .18s;
-}
-.swatch:hover{transform:translateY(-3px) scale(1.06)}
-.swatch[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.12)}
-.swatch[data-t="cyan"]   {background:linear-gradient(135deg,#00e5ff,#0077a8);box-shadow:0 0 16px -4px #00e5ff}
-.swatch[data-t="purple"] {background:linear-gradient(135deg,#a855f7,#5b21b6);box-shadow:0 0 16px -4px #a855f7}
-.swatch[data-t="matrix"] {background:linear-gradient(135deg,#3ddc84,#0f7a3f);box-shadow:0 0 16px -4px #3ddc84}
-.swatch[data-t="sunset"] {background:linear-gradient(135deg,#ff8c42,#c2410c);box-shadow:0 0 16px -4px #ff8c42}
-.swatch[data-t="crimson"]{background:linear-gradient(135deg,#ff3b5c,#9f1239);box-shadow:0 0 16px -4px #ff3b5c}
-
-.avatar-row{display:flex;align-items:center;gap:16px;margin-top:6px}
-.avatar-lg{width:72px;height:72px;border-radius:20px;font-size:26px}
-.avatar-actions{flex:1}
-.avatar-actions .ghost-btn{width:100%;text-align:center;padding:10px}
-
-/* Menu de perfil (clique no nome) */
-#profile-menu{
-  position:fixed;z-index:200;background:var(--panel-2);border:1px solid var(--accent-line);
-  border-radius:12px;display:none;overflow:hidden;min-width:180px;
-  box-shadow:0 20px 50px rgba(0,0,0,.7);animation:pop .16s;
-}
-#profile-menu button{
-  display:block;width:100%;text-align:left;padding:12px 16px;font-size:13px;transition:background .15s;
-}
-#profile-menu button:hover{background:var(--accent-soft);color:var(--accent)}
-#profile-menu button+button{border-top:1px solid var(--line)}
-
-/* Lightbox de mídia */
-#lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.94);display:none;align-items:center;justify-content:center;padding:24px}
-#lightbox.open{display:flex;animation:fade .2s}
-#lightbox img,#lightbox video{max-width:100%;max-height:90vh;border-radius:12px;border:1px solid var(--accent-line)}
-
-/* Toast */
-#toast{
-  position:fixed;bottom:26px;left:50%;transform:translate(-50%,140%);z-index:400;
-  background:var(--panel-2);border:1px solid var(--accent-line);color:var(--text);
-  padding:12px 20px;border-radius:12px;font-size:13px;transition:transform .35s cubic-bezier(.2,.9,.3,1);
-  box-shadow:0 16px 40px rgba(0,0,0,.6);max-width:88vw;
-}
-#toast.show{transform:translate(-50%,0)}
-
-/* Barra de upload */
-#upload-bar{height:2px;background:var(--accent);width:0;transition:width .2s;box-shadow:0 0 10px var(--accent)}
-
-/* ============================ ANIMAÇÕES ============================ */
-@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
-@keyframes pop{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
-@keyframes fade{from{opacity:0}to{opacity:1}}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+function verifyToken(token) {
+  try {
+    return jwt.verify(token, JWT_SECRET);
+  } catch {
+    return null;
+  }
 }
 
-/* ============================ MOBILE ============================ */
-@media (max-width:820px){
-  #sidebar{position:absolute;inset:0;width:100%;z-index:5}
-  #chat{position:absolute;inset:0;display:none}
-  body.chat-open #sidebar{display:none}
-  body.chat-open #chat{display:flex}
-  #back{display:block}
-  .msg{max-width:88%}
-  #messages{padding:16px}
-}
-</style>
-</head>
-<body>
-
-<!-- ===================== LOGIN ===================== -->
-<div class="overlay open" id="login">
-  <div class="card">
-    <h2>CyberChat Pro</h2>
-    <p class="hint">Entre com seu usuário. Se ainda não existir, a conta é criada na hora.</p>
-    <div class="field">
-      <label for="lg-user">Usuário</label>
-      <input id="lg-user" autocomplete="username" placeholder="ex: neo.anderson" maxlength="24">
-    </div>
-    <div class="field">
-      <label for="lg-pass">Senha</label>
-      <input id="lg-pass" type="password" autocomplete="current-password" placeholder="mínimo 6 caracteres">
-    </div>
-    <button class="primary" id="lg-btn">Entrar</button>
-    <p class="status" id="lg-status"></p>
-  </div>
-</div>
-
-<!-- ===================== PERFIL ===================== -->
-<div class="overlay" id="profile-modal">
-  <div class="card">
-    <h2>Seu perfil</h2>
-    <p class="hint">É assim que você aparece no chat global e para seus contatos.</p>
-
-    <div class="field">
-      <label>Foto de perfil</label>
-      <div class="avatar-row">
-        <div class="avatar avatar-lg" id="pf-avatar"></div>
-        <div class="avatar-actions">
-          <button class="ghost-btn" id="pf-upload-btn">Enviar arquivo</button>
-          <input type="file" id="pf-file" accept="image/*" hidden>
-          <input id="pf-url" placeholder="ou cole um link https://..." style="margin-top:8px;width:100%;background:var(--panel-2);border:1px solid var(--line);padding:10px 12px;border-radius:10px;outline:none;font-size:13px">
-        </div>
-      </div>
-    </div>
-
-    <div class="field">
-      <label for="pf-name">Nome de exibição</label>
-      <input id="pf-name" maxlength="40" placeholder="Como quer ser chamado">
-    </div>
-
-    <div class="field">
-      <label>Tema</label>
-      <div class="swatches" id="swatches">
-        <button class="swatch" data-t="cyan"    title="Cyber Cyan"   aria-pressed="true"></button>
-        <button class="swatch" data-t="purple"  title="Neon Purple"  aria-pressed="false"></button>
-        <button class="swatch" data-t="matrix"  title="Matrix Green" aria-pressed="false"></button>
-        <button class="swatch" data-t="sunset"  title="Sunset Orange"aria-pressed="false"></button>
-        <button class="swatch" data-t="crimson" title="Crimson Red"  aria-pressed="false"></button>
-      </div>
-    </div>
-
-    <button class="primary" id="pf-save">Salvar perfil</button>
-    <button class="text-btn" id="pf-close">Cancelar</button>
-    <p class="status" id="pf-status"></p>
-  </div>
-</div>
-
-<!-- ===================== MENU DE PERFIL ===================== -->
-<div id="profile-menu">
-  <button id="pm-open">Abrir conversa</button>
-  <button id="pm-save">Salvar contato</button>
-</div>
-
-<!-- ===================== LIGHTBOX ===================== -->
-<div id="lightbox"><div id="lightbox-content"></div></div>
-<div id="toast"></div>
-
-<!-- ===================== SIDEBAR ===================== -->
-<aside id="sidebar">
-  <div class="brand">
-    <h1>Cyber<span>Chat</span></h1>
-    <button class="ghost-btn" id="logout">Sair</button>
-  </div>
-
-  <div class="me" id="me">
-    <div class="avatar" id="me-avatar"></div>
-    <div class="me-info">
-      <div class="me-name" id="me-name">—</div>
-      <div class="me-tag" id="me-tag">@—</div>
-    </div>
-    <span class="me-edit">Editar</span>
-  </div>
-
-  <div class="search-wrap">
-    <input id="search" placeholder="Buscar pessoas..." autocomplete="off">
-    <ul id="suggestions"></ul>
-  </div>
-
-  <div class="rail-label">Salas</div>
-  <div class="room active" id="room-global">
-    <div class="avatar sm" style="border-radius:9px">#</div>
-    <div class="room-body">
-      <div class="room-name">Chat global</div>
-      <div class="room-sub">Aberto para todo mundo</div>
-    </div>
-  </div>
-
-  <div class="rail-label">Contatos</div>
-  <div id="contacts"></div>
-</aside>
-
-<!-- ===================== CHAT ===================== -->
-<main id="chat">
-  <header id="chat-header">
-    <div class="head-left">
-      <button id="back">&lsaquo;</button>
-      <div class="avatar sm" id="peer-avatar">#</div>
-      <div>
-        <div id="chat-title">Chat global</div>
-        <div id="chat-status">Conectando...</div>
-      </div>
-    </div>
-    <div class="head-actions">
-      <button class="ghost-btn" id="btn-theme">Tema</button>
-      <button class="ghost-btn" id="btn-remove" style="display:none">Remover contato</button>
-      <button class="ghost-btn danger" id="btn-clear" style="display:none">Apagar conversa</button>
-    </div>
-  </header>
-
-  <div id="upload-bar"></div>
-
-  <ul id="messages"></ul>
-  <div id="typing"></div>
-
-  <div id="composer">
-    <div id="preview"></div>
-    <form class="composer-row" id="form">
-      <input type="file" id="file" accept="image/*,video/*" hidden>
-      <button type="button" class="attach" id="attach" title="Anexar imagem ou vídeo">+</button>
-      <input id="input" placeholder="Escreva uma mensagem" autocomplete="off" maxlength="4000">
-      <button type="submit" class="send" id="send">Enviar</button>
-    </form>
-  </div>
-</main>
-
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-/* ============================================================
-   ESTADO
-   ============================================================ */
-const MAX_BYTES = 100 * 1024 * 1024;
-const $ = (id) => document.getElementById(id);
-
-let token = localStorage.getItem('cc_token');
-let me = null;                 // { id, username, displayName, avatarUrl, theme }
-let socket = null;
-let room = 'global';
-let peer = null;               // username do outro lado, em DM
-let contacts = [];
-let pendingFile = null;        // { dataUrl, kind, name }
-let oldestLoaded = null;
-let menuTarget = null;
-let typingTimer = null;
-
-/* ============================================================
-   UTIL
-   ============================================================ */
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-function toast(msg, isError) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.style.borderColor = isError ? 'rgba(255,107,107,.5)' : 'var(--accent-line)';
-  t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 3200);
+/** Nome canônico da sala privada: dm:<menor>|<maior> */
+function dmRoom(a, b) {
+  return 'dm:' + [a.toLowerCase(), b.toLowerCase()].sort().join('|');
 }
 
-function applyTheme(theme) {
-  document.documentElement.dataset.theme = theme || 'cyan';
-  document.querySelectorAll('.swatch').forEach((s) =>
-    s.setAttribute('aria-pressed', String(s.dataset.t === document.documentElement.dataset.theme)));
+/** O usuário pode falar/ler nessa sala? */
+function canAccessRoom(room, username) {
+  if (room === 'global') return true;
+  if (!room.startsWith('dm:')) return false;
+  const members = room.slice(3).split('|');
+  if (members.length !== 2) return false;
+  return members.includes(username.toLowerCase());
 }
 
-function api(path, options = {}) {
-  return fetch(path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: 'Bearer ' + token } : {}),
-      ...(options.headers || {}),
+/** Middleware de autenticação para rotas HTTP. */
+function auth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7) : null;
+  const claims = token && verifyToken(token);
+  if (!claims) {
+    return res.status(401).json({ status: 'error', message: 'Sessão expirada. Entre novamente.' });
+  }
+  req.user = claims;
+  next();
+}
+
+/** Formato que o front consome. */
+function shapeMessage(row, profile) {
+  return {
+    id: row.id,
+    room: row.room,
+    username: row.sender_name,
+    displayName: profile?.display_name || row.sender_name,
+    avatarUrl: profile?.avatar_url || null,
+    text: row.content || '',
+    fileUrl: row.file_url || null,
+    fileType: row.file_type || null,
+    isSystem: row.is_system,
+    createdAt: row.created_at,
+  };
+}
+
+/** Cache de perfis em memória — evita um SELECT por mensagem no chat global. */
+const profileCache = new Map(); // username(lower) -> { id, username, display_name, avatar_url, theme, ts }
+const PROFILE_TTL = 60 * 1000;
+
+async function getProfile(username) {
+  const key = username.toLowerCase();
+  const hit = profileCache.get(key);
+  if (hit && Date.now() - hit.ts < PROFILE_TTL) return hit;
+
+  const { data } = await db
+    .from('users')
+    .select('id, username, display_name, avatar_url, theme')
+    .ilike('username', username)
+    .maybeSingle();
+
+  if (data) {
+    const entry = { ...data, ts: Date.now() };
+    profileCache.set(key, entry);
+    return entry;
+  }
+  return null;
+}
+
+function invalidateProfile(username) {
+  profileCache.delete(username.toLowerCase());
+}
+
+/** Sobe um dataURL base64 para o Storage e devolve a URL pública. */
+async function uploadMedia(dataUrl, username) {
+  const match = /^data:([\w/+.-]+);base64,(.+)$/.exec(dataUrl || '');
+  if (!match) throw new Error('Arquivo inválido.');
+
+  const mime = match[1];
+  const spec = ALLOWED_MIME[mime];
+  if (!spec) throw new Error('Formato não suportado. Use JPG, PNG, WEBP, GIF, MP4, WEBM ou MOV.');
+
+  const buffer = Buffer.from(match[2], 'base64');
+  if (buffer.length > MAX_FILE_BYTES) throw new Error('Arquivo acima de 100 MB.');
+
+  const name = `${username.toLowerCase()}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${spec.ext}`;
+
+  const { error } = await db.storage.from(MEDIA_BUCKET).upload(name, buffer, {
+    contentType: mime,
+    cacheControl: '31536000',
+    upsert: false,
+  });
+  if (error) throw new Error('Falha no upload: ' + error.message);
+
+  const { data } = db.storage.from(MEDIA_BUCKET).getPublicUrl(name);
+  return { url: data.publicUrl, kind: spec.kind };
+}
+
+// ============================================================
+// ROTAS DE API
+// ============================================================
+
+/**
+ * POST /api/auth — Login, e cadastro automático se o usuário não existir.
+ * body: { username, password }
+ */
+app.post('/api/auth', async (req, res) => {
+  try {
+    const username = String(req.body.username || '').trim();
+    const password = String(req.body.password || '');
+
+    if (!USERNAME_RE.test(username)) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Use 3 a 24 caracteres: letras, números, ponto, hífen ou underline.',
+      });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ status: 'error', message: 'A senha precisa de pelo menos 6 caracteres.' });
+    }
+
+    const { data: existing, error: selErr } = await db
+      .from('users')
+      .select('id, username, password_hash, display_name, avatar_url, theme')
+      .ilike('username', username)
+      .maybeSingle();
+
+    if (selErr) throw selErr;
+
+    // --- Login ---
+    if (existing) {
+      const ok = await bcrypt.compare(password, existing.password_hash);
+      if (!ok) {
+        return res.status(401).json({ status: 'error', message: 'Senha incorreta.' });
+      }
+      await db.from('users').update({ last_seen: new Date().toISOString() }).eq('id', existing.id);
+
+      const profile = {
+        id: existing.id,
+        username: existing.username,
+        displayName: existing.display_name,
+        avatarUrl: existing.avatar_url,
+        theme: existing.theme,
+      };
+      return res.json({ status: 'success', created: false, token: signToken(existing), profile });
+    }
+
+    // --- Cadastro automático ---
+    const hash = await bcrypt.hash(password, 12);
+    const { data: created, error: insErr } = await db
+      .from('users')
+      .insert({ username, password_hash: hash, display_name: username })
+      .select('id, username, display_name, avatar_url, theme')
+      .single();
+
+    if (insErr) {
+      if (insErr.code === '23505') {
+        return res.status(409).json({ status: 'error', message: 'Esse nome acabou de ser registrado. Tente outro.' });
+      }
+      throw insErr;
+    }
+
+    return res.json({
+      status: 'success',
+      created: true,
+      token: signToken(created),
+      profile: {
+        id: created.id,
+        username: created.username,
+        displayName: created.display_name,
+        avatarUrl: created.avatar_url,
+        theme: created.theme,
+      },
+    });
+  } catch (err) {
+    console.error('[auth]', err.message);
+    res.status(500).json({ status: 'error', message: 'Não foi possível conectar ao servidor.' });
+  }
+});
+
+/**
+ * GET /api/me — perfil da sessão atual.
+ */
+app.get('/api/me', auth, async (req, res) => {
+  const profile = await getProfile(req.user.username);
+  if (!profile) return res.status(404).json({ status: 'error', message: 'Perfil não encontrado.' });
+  res.json({
+    status: 'success',
+    profile: {
+      id: profile.id,
+      username: profile.username,
+      displayName: profile.display_name,
+      avatarUrl: profile.avatar_url,
+      theme: profile.theme,
     },
-  }).then(async (r) => {
-    const body = await r.json().catch(() => ({}));
-    if (r.status === 401) { hardLogout(); throw new Error('Sessão expirada.'); }
-    if (!r.ok || body.status === 'error') throw new Error(body.message || 'Algo falhou.');
-    return body;
   });
-}
-
-const dmRoom = (a, b) => 'dm:' + [a.toLowerCase(), b.toLowerCase()].sort().join('|');
-const initial = (name) => (name || '?').trim().charAt(0).toUpperCase();
-
-function avatarHTML(profile, cls = '') {
-  const alt = esc(profile.displayName || profile.username);
-  return profile.avatarUrl
-    ? `<img class="avatar ${cls}" src="${esc(profile.avatarUrl)}" alt="${alt}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'avatar ${cls}',textContent:'${esc(initial(profile.displayName || profile.username))}'}))">`
-    : `<div class="avatar ${cls}">${esc(initial(profile.displayName || profile.username))}</div>`;
-}
-
-const hhmm = (iso) =>
-  new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-
-/* ============================================================
-   LOGIN
-   ============================================================ */
-$('lg-btn').onclick = doLogin;
-$('lg-pass').addEventListener('keydown', (e) => e.key === 'Enter' && doLogin());
-$('lg-user').addEventListener('keydown', (e) => e.key === 'Enter' && $('lg-pass').focus());
-
-async function doLogin() {
-  const username = $('lg-user').value.trim();
-  const password = $('lg-pass').value;
-  const status = $('lg-status');
-  status.className = 'status';
-  status.textContent = 'Conectando...';
-  $('lg-btn').disabled = true;
-
-  try {
-    const res = await fetch('/api/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-    const body = await res.json();
-    if (body.status !== 'success') throw new Error(body.message);
-
-    token = body.token;
-    localStorage.setItem('cc_token', token);
-    me = body.profile;
-    status.textContent = body.created ? 'Conta criada. Entrando...' : 'Autenticado.';
-    boot();
-  } catch (err) {
-    status.className = 'status err';
-    status.textContent = err.message || 'Falha de conexão.';
-  } finally {
-    $('lg-btn').disabled = false;
-  }
-}
-
-function hardLogout() {
-  localStorage.removeItem('cc_token');
-  location.reload();
-}
-$('logout').onclick = hardLogout;
-
-/* ============================================================
-   BOOT
-   ============================================================ */
-async function start() {
-  if (!token) return;
-  try {
-    const res = await api('/api/me');
-    me = res.profile;
-    boot();
-  } catch { /* token inválido: fica no login */ }
-}
-
-function boot() {
-  $('login').classList.remove('open');
-  applyTheme(me.theme);
-  paintMe();
-  loadContacts();
-  openRoom('global');
-}
-
-function paintMe() {
-  $('me-avatar').outerHTML = avatarHTML(me).replace('class="avatar', 'id="me-avatar" class="avatar');
-  $('me-name').textContent = me.displayName;
-  $('me-tag').textContent = '@' + me.username;
-}
-
-/* ============================================================
-   CONTATOS
-   ============================================================ */
-async function loadContacts() {
-  try {
-    const res = await api('/api/contacts');
-    contacts = res.data;
-    paintContacts();
-  } catch { /* silencioso */ }
-}
-
-function paintContacts() {
-  const box = $('contacts');
-  if (!contacts.length) {
-    box.innerHTML = `<div style="padding:16px 20px;font-size:13px;color:var(--muted);line-height:1.6">
-      Nenhum contato ainda. Busque alguém acima ou clique num nome no chat global para começar a conversar.
-    </div>`;
-    return;
-  }
-  box.innerHTML = contacts.map((c) => `
-    <div class="room ${peer === c.username ? 'active' : ''}" data-user="${esc(c.username)}">
-      ${avatarHTML(c, 'sm')}
-      <div class="room-body">
-        <div class="room-name">${esc(c.displayName)}</div>
-        <div class="room-sub">@${esc(c.username)}</div>
-      </div>
-      <span class="dot-unread" data-badge="${esc(c.username)}" style="display:none"></span>
-    </div>`).join('');
-
-  box.querySelectorAll('[data-user]').forEach((el) =>
-    el.onclick = () => openRoom(dmRoom(me.username, el.dataset.user), el.dataset.user));
-}
-
-async function saveContact(username) {
-  try {
-    await api('/api/contacts', { method: 'POST', body: JSON.stringify({ username }) });
-    await loadContacts();
-  } catch (e) { toast(e.message, true); }
-}
-
-$('btn-remove').onclick = async () => {
-  if (!peer) return;
-  try {
-    await api('/api/contacts/' + encodeURIComponent(peer), { method: 'DELETE' });
-    toast('Contato removido. O histórico continua salvo.');
-    await loadContacts();
-    openRoom('global');
-  } catch (e) { toast(e.message, true); }
-};
-
-/* ============================================================
-   BUSCA
-   ============================================================ */
-let searchTimer = null;
-$('search').oninput = () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(runSearch, 220);
-};
-
-async function runSearch() {
-  const query = $('search').value.trim();
-  const list = $('suggestions');
-  if (!query) { list.style.display = 'none'; return; }
-  try {
-    const res = await api('/api/search?query=' + encodeURIComponent(query));
-    if (!res.data.length) {
-      list.innerHTML = `<li style="cursor:default;color:var(--muted)">Ninguém com esse nome.</li>`;
-      list.style.display = 'block';
-      return;
-    }
-    list.innerHTML = res.data.map((u) => `
-      <li data-user="${esc(u.username)}">
-        ${avatarHTML(u, 'sm')}
-        <div style="min-width:0">
-          <div style="font-size:13.5px;font-weight:500">${esc(u.displayName)}</div>
-          <div style="font-size:11px;color:var(--muted)">@${esc(u.username)}</div>
-        </div>
-      </li>`).join('');
-    list.style.display = 'block';
-    list.querySelectorAll('[data-user]').forEach((el) => el.onclick = async () => {
-      const u = el.dataset.user;
-      list.style.display = 'none';
-      $('search').value = '';
-      await saveContact(u);
-      openRoom(dmRoom(me.username, u), u);
-    });
-  } catch { list.style.display = 'none'; }
-}
-
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.search-wrap')) $('suggestions').style.display = 'none';
-  if (!e.target.closest('#profile-menu') && !e.target.closest('.who')) $('profile-menu').style.display = 'none';
 });
 
-/* ============================================================
-   SALAS + SOCKET
-   ============================================================ */
-$('room-global').onclick = () => openRoom('global');
-$('back').onclick = () => document.body.classList.remove('chat-open');
-
-async function openRoom(nextRoom, nextPeer = null) {
-  room = nextRoom;
-  peer = nextPeer;
-  oldestLoaded = null;
-
-  const isDM = room !== 'global';
-  $('chat-title').textContent = isDM ? (contacts.find((c) => c.username === peer)?.displayName || peer) : 'Chat global';
-  $('peer-avatar').outerHTML = avatarHTML(
-    isDM ? (contacts.find((c) => c.username === peer) || { username: peer, displayName: peer }) : { displayName: '#' },
-    'sm'
-  ).replace('class="avatar', 'id="peer-avatar" class="avatar');
-  $('btn-clear').style.display = isDM ? 'block' : 'none';
-  $('btn-remove').style.display = isDM ? 'block' : 'none';
-  $('room-global').classList.toggle('active', !isDM);
-  document.querySelectorAll('[data-badge="' + peer + '"]').forEach((b) => b.style.display = 'none');
-  paintContacts();
-  document.body.classList.add('chat-open');
-
-  $('messages').innerHTML = '';
-  connect();
-  await loadHistory();
-}
-
-function connect() {
-  if (socket) socket.disconnect();
-  socket = io({ auth: { token, room }, transports: ['websocket', 'polling'] });
-
-  socket.on('connect', () => setStatus(peer ? 'Conversa privada' : 'Todos podem ler aqui'));
-  socket.on('disconnect', () => setStatus('Reconectando...'));
-  socket.on('connect_error', (err) => {
-    if (err.message === 'unauthorized') return hardLogout();
-    setStatus('Sem conexão');
-  });
-
-  socket.on('chat message', (msg) => {
-    if (msg.room !== room) return;
-    appendMessage(msg, true);
-  });
-
-  socket.on('clear messages', () => {
-    $('messages').innerHTML = '';
-    toast('Conversa apagada para os dois lados.');
-  });
-
-  socket.on('chat error', (e) => toast(e.message, true));
-
-  socket.on('profile updated', (p) => {
-    if (p.username === me.username) { me = p; paintMe(); applyTheme(p.theme); }
-    document.querySelectorAll(`[data-author="${CSS.escape(p.username)}"] img.avatar`)
-      .forEach((img) => { if (p.avatarUrl) img.src = p.avatarUrl; });
-    document.querySelectorAll(`[data-author="${CSS.escape(p.username)}"] .who .name`)
-      .forEach((el) => el.textContent = p.displayName);
-    loadContacts();
-  });
-
-  socket.on('dm notification', (n) => {
-    if (n.room === room) return;
-    toast(`${n.displayName}: ${n.preview}`);
-    const badge = document.querySelector(`[data-badge="${CSS.escape(n.from)}"]`);
-    if (badge) badge.style.display = 'block';
-    else loadContacts();
-  });
-
-  socket.on('typing', ({ username, isTyping }) => {
-    $('typing').textContent = isTyping ? `${username} está digitando...` : '';
-  });
-}
-
-const setStatus = (s) => $('chat-status').textContent = s;
-
-/* ============================================================
-   HISTÓRICO
-   ============================================================ */
-async function loadHistory(before = null) {
+/**
+ * PUT /api/profile — atualiza nome de exibição, avatar e tema.
+ * body: { displayName?, avatarUrl?, avatarData?, theme? }
+ * avatarData = dataURL (upload de arquivo). avatarUrl = link direto.
+ */
+app.put('/api/profile', auth, async (req, res) => {
   try {
-    const url = '/api/history?room=' + encodeURIComponent(room) + (before ? '&before=' + encodeURIComponent(before) : '');
-    const res = await api(url);
+    const patch = {};
 
-    if (!before && !res.data.length) {
-      $('messages').innerHTML = `<li class="system">Nada por aqui ainda. Diga a primeira coisa.</li>`;
-      return;
-    }
-    if (!before) $('messages').innerHTML = '';
-
-    const box = $('messages');
-    const prevHeight = box.scrollHeight;
-
-    if (before) {
-      // Páginas antigas entram acima: constrói fora da tela e insere no topo.
-      const frag = document.createDocumentFragment();
-      res.data.forEach((m) => frag.appendChild(buildMessage(m)));
-      box.prepend(frag);
-    } else {
-      // Append um a um para o agrupamento por autor enxergar a mensagem anterior.
-      res.data.forEach((m) => box.appendChild(buildMessage(m)));
+    if (req.body.displayName !== undefined) {
+      const name = String(req.body.displayName).trim();
+      if (name.length < 1 || name.length > 40) {
+        return res.status(400).json({ status: 'error', message: 'O nome de exibição vai de 1 a 40 caracteres.' });
+      }
+      patch.display_name = name;
     }
 
-    oldestLoaded = res.data[0]?.createdAt || oldestLoaded;
+    if (req.body.theme !== undefined) {
+      if (!VALID_THEMES.includes(req.body.theme)) {
+        return res.status(400).json({ status: 'error', message: 'Tema desconhecido.' });
+      }
+      patch.theme = req.body.theme;
+    }
 
-    if (res.hasMore) ensureLoadMore();
-    else $('load-more')?.remove();
+    if (req.body.avatarData) {
+      const { url } = await uploadMedia(req.body.avatarData, req.user.username);
+      patch.avatar_url = url;
+    } else if (req.body.avatarUrl !== undefined) {
+      const link = String(req.body.avatarUrl).trim();
+      if (link && !/^https?:\/\//i.test(link)) {
+        return res.status(400).json({ status: 'error', message: 'O link do avatar precisa começar com http:// ou https://' });
+      }
+      patch.avatar_url = link || null;
+    }
 
-    if (before) box.scrollTop = box.scrollHeight - prevHeight;
-    else box.scrollTop = box.scrollHeight;
-  } catch (e) {
-    toast(e.message, true);
-  }
-}
+    if (!Object.keys(patch).length) {
+      return res.status(400).json({ status: 'error', message: 'Nada para salvar.' });
+    }
 
-function ensureLoadMore() {
-  if ($('load-more')) return;
-  const btn = document.createElement('button');
-  btn.id = 'load-more';
-  btn.className = 'ghost-btn';
-  btn.textContent = 'Carregar mensagens anteriores';
-  btn.onclick = () => loadHistory(oldestLoaded);
-  $('messages').prepend(btn);
-}
+    const { data, error } = await db
+      .from('users')
+      .update(patch)
+      .eq('id', req.user.sub)
+      .select('id, username, display_name, avatar_url, theme')
+      .single();
 
-/* ============================================================
-   RENDER DE MENSAGENS
-   ============================================================ */
-function buildMessage(m) {
-  const li = document.createElement('li');
+    if (error) throw error;
 
-  if (m.isSystem) {
-    li.className = 'system';
-    li.textContent = m.text;
-    return li;
-  }
+    invalidateProfile(req.user.username);
 
-  const mine = m.username.toLowerCase() === me.username.toLowerCase();
-  li.className = 'msg ' + (mine ? 'me' : 'them');
-  li.dataset.author = m.username;
+    const profile = {
+      id: data.id,
+      username: data.username,
+      displayName: data.display_name,
+      avatarUrl: data.avatar_url,
+      theme: data.theme,
+    };
 
-  // Mensagens seguidas do mesmo autor colapsam avatar e nome.
-  const last = $('messages').lastElementChild;
-  if (last?.dataset?.author === m.username && !last.classList.contains('system')) {
-    li.classList.add('stacked');
-  }
+    // Quem já está online vê o novo avatar/nome na hora.
+    io.emit('profile updated', profile);
 
-  const media = m.fileUrl
-    ? (m.fileType === 'image'
-        ? `<img class="media" src="${esc(m.fileUrl)}" alt="Imagem enviada por ${esc(m.displayName)}" loading="lazy">`
-        : `<video class="media" src="${esc(m.fileUrl)}" controls preload="metadata"></video>`)
-    : '';
-
-  const who = mine ? '' : `
-    <span class="who" data-user="${esc(m.username)}">
-      <span class="name">${esc(m.displayName)}</span><span class="handle">@${esc(m.username)}</span>
-    </span>`;
-
-  li.innerHTML = `
-    ${avatarHTML(m, 'sm')}
-    <div class="bubble">
-      ${who}
-      ${media}
-      ${m.text ? `<span>${esc(m.text)}</span>` : ''}
-      <div class="time">${hhmm(m.createdAt)}</div>
-    </div>`;
-
-  const nameEl = li.querySelector('.who');
-  if (nameEl) nameEl.onclick = (e) => openProfileMenu(e, m.username);
-
-  li.querySelectorAll('.media').forEach((el) => el.onclick = () => openLightbox(m));
-
-  return li;
-}
-
-function appendMessage(m, scroll) {
-  const box = $('messages');
-  box.querySelector('.system')?.textContent?.startsWith('Nada por aqui') && box.replaceChildren();
-  const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 160;
-  box.appendChild(buildMessage(m));
-  if (scroll && (nearBottom || m.username === me.username)) box.scrollTop = box.scrollHeight;
-}
-
-/* ============================================================
-   MENU AO CLICAR NUM NOME (chat global)
-   ============================================================ */
-function openProfileMenu(e, username) {
-  e.stopPropagation();
-  menuTarget = username;
-  const menu = $('profile-menu');
-  menu.style.display = 'block';
-  const x = Math.min(e.clientX, window.innerWidth - 200);
-  const y = Math.min(e.clientY, window.innerHeight - 110);
-  menu.style.left = x + 'px';
-  menu.style.top = y + 'px';
-}
-
-$('pm-open').onclick = async () => {
-  $('profile-menu').style.display = 'none';
-  await saveContact(menuTarget);
-  openRoom(dmRoom(me.username, menuTarget), menuTarget);
-};
-$('pm-save').onclick = async () => {
-  $('profile-menu').style.display = 'none';
-  await saveContact(menuTarget);
-  toast('Contato salvo.');
-};
-
-/* ============================================================
-   LIGHTBOX
-   ============================================================ */
-function openLightbox(m) {
-  const box = $('lightbox-content');
-  box.innerHTML = m.fileType === 'image'
-    ? `<img src="${esc(m.fileUrl)}" alt="">`
-    : `<video src="${esc(m.fileUrl)}" controls autoplay></video>`;
-  $('lightbox').classList.add('open');
-}
-$('lightbox').onclick = () => {
-  $('lightbox').classList.remove('open');
-  $('lightbox-content').innerHTML = '';
-};
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    $('lightbox').classList.remove('open');
-    $('profile-modal').classList.remove('open');
-    $('profile-menu').style.display = 'none';
+    res.json({ status: 'success', profile });
+  } catch (err) {
+    console.error('[profile]', err.message);
+    res.status(500).json({ status: 'error', message: err.message || 'Não foi possível salvar o perfil.' });
   }
 });
 
-/* ============================================================
-   ENVIO DE MENSAGEM E MÍDIA
-   ============================================================ */
-$('attach').onclick = () => $('file').click();
-
-$('file').onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > MAX_BYTES) {
-    toast('Arquivo acima de 100 MB. Comprima antes de enviar.', true);
-    e.target.value = '';
-    return;
-  }
-  const kind = file.type.startsWith('video') ? 'video' : 'image';
-  const reader = new FileReader();
-  reader.onload = () => {
-    pendingFile = { dataUrl: reader.result, kind, name: file.name };
-    const preview = $('preview');
-    preview.style.display = 'block';
-    preview.innerHTML = kind === 'image'
-      ? `<img src="${reader.result}" alt="Pré-visualização"><button type="button" id="drop">×</button>`
-      : `<video src="${reader.result}" muted></video><button type="button" id="drop">×</button>`;
-    $('drop').onclick = clearPending;
-  };
-  reader.readAsDataURL(file);
-  e.target.value = '';
-};
-
-function clearPending() {
-  pendingFile = null;
-  $('preview').style.display = 'none';
-  $('preview').innerHTML = '';
-}
-
-$('form').onsubmit = (e) => {
-  e.preventDefault();
-  const input = $('input');
-  const text = input.value.trim();
-  if (!text && !pendingFile) return;
-  if (!socket?.connected) return toast('Sem conexão com o servidor.', true);
-
-  const payload = { text };
-  if (pendingFile) payload.file = pendingFile.dataUrl;
-
-  $('send').disabled = true;
-  if (pendingFile) $('upload-bar').style.width = '70%';
-
-  socket.emit('chat message', payload, (ack) => {
-    $('send').disabled = false;
-    $('upload-bar').style.width = '100%';
-    setTimeout(() => ($('upload-bar').style.width = '0'), 300);
-    if (ack?.status === 'error') toast(ack.message, true);
-  });
-
-  input.value = '';
-  clearPending();
-};
-
-$('input').oninput = () => {
-  if (!socket?.connected) return;
-  socket.emit('typing', true);
-  clearTimeout(typingTimer);
-  typingTimer = setTimeout(() => socket.emit('typing', false), 1200);
-};
-
-$('btn-clear').onclick = () => {
-  if (!peer) return;
-  if (!confirm('Apagar todas as mensagens desta conversa para os dois? Não dá para desfazer.')) return;
-  socket.emit('request clear', room, (ack) => {
-    if (ack?.status === 'error') toast(ack.message, true);
-  });
-};
-
-/* ============================================================
-   PERFIL + TEMAS
-   ============================================================ */
-$('me').onclick = openProfile;
-$('btn-theme').onclick = openProfile;
-$('pf-close').onclick = () => { $('profile-modal').classList.remove('open'); applyTheme(me.theme); };
-
-let draftTheme = 'cyan';
-let draftAvatarData = null;
-
-function openProfile() {
-  draftTheme = me.theme;
-  draftAvatarData = null;
-  $('pf-name').value = me.displayName;
-  $('pf-url').value = me.avatarUrl || '';
-  $('pf-avatar').outerHTML = avatarHTML(me, 'avatar-lg').replace('class="avatar', 'id="pf-avatar" class="avatar');
-  $('pf-status').textContent = '';
-  applyTheme(draftTheme);
-  $('profile-modal').classList.add('open');
-}
-
-$('swatches').onclick = (e) => {
-  const swatch = e.target.closest('.swatch');
-  if (!swatch) return;
-  draftTheme = swatch.dataset.t;
-  applyTheme(draftTheme); // preview imediato
-};
-
-$('pf-upload-btn').onclick = () => $('pf-file').click();
-$('pf-file').onchange = (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  if (file.size > 5 * 1024 * 1024) return toast('Escolha uma imagem de até 5 MB.', true);
-  const reader = new FileReader();
-  reader.onload = () => {
-    draftAvatarData = reader.result;
-    $('pf-url').value = '';
-    $('pf-avatar').outerHTML =
-      `<img id="pf-avatar" class="avatar avatar-lg" src="${reader.result}" alt="Pré-visualização">`;
-  };
-  reader.readAsDataURL(file);
-};
-
-$('pf-save').onclick = async () => {
-  const status = $('pf-status');
-  status.className = 'status';
-  status.textContent = 'Salvando...';
-  $('pf-save').disabled = true;
-
-  const body = { displayName: $('pf-name').value.trim(), theme: draftTheme };
-  if (draftAvatarData) body.avatarData = draftAvatarData;
-  else body.avatarUrl = $('pf-url').value.trim();
-
+/**
+ * GET /api/search?query= — busca usuários por username ou nome de exibição.
+ */
+app.get('/api/search', auth, async (req, res) => {
   try {
-    const res = await api('/api/profile', { method: 'PUT', body: JSON.stringify(body) });
-    me = res.profile;
-    applyTheme(me.theme);
-    paintMe();
-    $('profile-modal').classList.remove('open');
-    toast('Perfil atualizado.');
-  } catch (err) {
-    status.className = 'status err';
-    status.textContent = err.message;
-    applyTheme(me.theme);
-  } finally {
-    $('pf-save').disabled = false;
-  }
-};
+    const query = String(req.query.query || '').trim();
+    if (query.length < 1) return res.json({ status: 'success', data: [] });
 
-start();
-</script>
-</body>
-</html>
+    const safe = query.replace(/[%_,]/g, '');
+    const { data, error } = await db
+      .from('users')
+      .select('id, username, display_name, avatar_url')
+      .or(`username.ilike.%${safe}%,display_name.ilike.%${safe}%`)
+      .neq('id', req.user.sub)
+      .order('last_seen', { ascending: false })
+      .limit(8);
+
+    if (error) throw error;
+
+    res.json({
+      status: 'success',
+      data: data.map((u) => ({
+        id: u.id,
+        username: u.username,
+        displayName: u.display_name,
+        avatarUrl: u.avatar_url,
+      })),
+    });
+  } catch (err) {
+    console.error('[search]', err.message);
+    res.status(500).json({ status: 'error', data: [] });
+  }
+});
+
+/**
+ * GET /api/history?room=&before= — resgata o histórico paginado (mais recentes primeiro no DB,
+ * devolvido em ordem cronológica pro front só dar append).
+ */
+app.get('/api/history', auth, async (req, res) => {
+  try {
+    const room = String(req.query.room || 'global');
+    if (!canAccessRoom(room, req.user.username)) {
+      return res.status(403).json({ status: 'error', message: 'Sala fora do seu alcance.' });
+    }
+
+    let q = db
+      .from('messages')
+      .select('id, room, sender_name, content, file_url, file_type, is_system, created_at')
+      .eq('room', room)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(HISTORY_LIMIT);
+
+    if (req.query.before) q = q.lt('created_at', req.query.before);
+
+    const { data, error } = await q;
+    if (error) throw error;
+
+    const rows = data.reverse();
+
+    // Um único SELECT para todos os autores da página.
+    const authors = [...new Set(rows.map((r) => r.sender_name.toLowerCase()))];
+    const profiles = new Map();
+    if (authors.length) {
+      const { data: users } = await db
+        .from('users')
+        .select('username, display_name, avatar_url')
+        .in('username', authors);
+      (users || []).forEach((u) => profiles.set(u.username.toLowerCase(), u));
+    }
+
+    res.json({
+      status: 'success',
+      data: rows.map((r) => shapeMessage(r, profiles.get(r.sender_name.toLowerCase()))),
+      hasMore: rows.length === HISTORY_LIMIT,
+    });
+  } catch (err) {
+    console.error('[history]', err.message);
+    res.status(500).json({ status: 'error', data: [] });
+  }
+});
+
+/**
+ * GET /api/contacts — contatos salvos (agora no banco, não no localStorage).
+ */
+app.get('/api/contacts', auth, async (req, res) => {
+  try {
+    const { data, error } = await db
+      .from('contacts')
+      .select('created_at, contact:contact_id ( id, username, display_name, avatar_url, last_seen )')
+      .eq('owner_id', req.user.sub)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.json({
+      status: 'success',
+      data: (data || [])
+        .filter((r) => r.contact)
+        .map((r) => ({
+          id: r.contact.id,
+          username: r.contact.username,
+          displayName: r.contact.display_name,
+          avatarUrl: r.contact.avatar_url,
+          lastSeen: r.contact.last_seen,
+        })),
+    });
+  } catch (err) {
+    console.error('[contacts:get]', err.message);
+    res.status(500).json({ status: 'error', data: [] });
+  }
+});
+
+/**
+ * POST /api/contacts — salva um contato. body: { username }
+ */
+app.post('/api/contacts', auth, async (req, res) => {
+  try {
+    const target = await getProfile(String(req.body.username || ''));
+    if (!target) return res.status(404).json({ status: 'error', message: 'Usuário não encontrado.' });
+    if (target.id === req.user.sub) {
+      return res.status(400).json({ status: 'error', message: 'Você já se tem.' });
+    }
+
+    const { error } = await db
+      .from('contacts')
+      .upsert(
+        { owner_id: req.user.sub, contact_id: target.id },
+        { onConflict: 'owner_id,contact_id', ignoreDuplicates: true }
+      );
+
+    if (error) throw error;
+    res.json({ status: 'success' });
+  } catch (err) {
+    console.error('[contacts:post]', err.message);
+    res.status(500).json({ status: 'error', message: 'Não foi possível salvar o contato.' });
+  }
+});
+
+/**
+ * DELETE /api/contacts/:username — remove o contato da sua lista (não apaga o histórico).
+ */
+app.delete('/api/contacts/:username', auth, async (req, res) => {
+  try {
+    const target = await getProfile(req.params.username);
+    if (!target) return res.json({ status: 'success' });
+
+    const { error } = await db
+      .from('contacts')
+      .delete()
+      .eq('owner_id', req.user.sub)
+      .eq('contact_id', target.id);
+
+    if (error) throw error;
+    res.json({ status: 'success' });
+  } catch (err) {
+    console.error('[contacts:delete]', err.message);
+    res.status(500).json({ status: 'error', message: 'Não foi possível remover o contato.' });
+  }
+});
+
+// Front-end estático
+app.use(express.static(path.join(__dirname, 'public'), { extensions: ['html'] }));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
+
+// ============================================================
+// SOCKET.IO
+// ============================================================
+
+// Handshake autenticado: sem token válido, nem conecta.
+io.use((socket, next) => {
+  const claims = verifyToken(socket.handshake.auth?.token);
+  if (!claims) return next(new Error('unauthorized'));
+
+  const room = socket.handshake.auth?.room || 'global';
+  if (!canAccessRoom(room, claims.username)) return next(new Error('forbidden'));
+
+  socket.data.username = claims.username;
+  socket.data.userId = claims.sub;
+  socket.data.room = room;
+  next();
+});
+
+const usersOnline = new Map(); // username(lower) -> Set<socketId>
+
+io.on('connection', async (socket) => {
+  const { username, userId, room } = socket.data;
+  const key = username.toLowerCase();
+
+  socket.join(room);
+  socket.join('user:' + key); // canal pessoal para notificações
+
+  if (!usersOnline.has(key)) usersOnline.set(key, new Set());
+  usersOnline.get(key).add(socket.id);
+
+  io.emit('presence', { username, online: true });
+
+  db.from('users').update({ last_seen: new Date().toISOString() }).eq('id', userId).then(() => {});
+
+  // ---------- Enviar mensagem ----------
+  socket.on('chat message', async (payload, ack) => {
+    try {
+      const text = String(payload?.text || '').trim().slice(0, 4000);
+      const hasFile = Boolean(payload?.file);
+
+      if (!text && !hasFile) return;
+
+      let fileUrl = null;
+      let fileType = null;
+
+      if (hasFile) {
+        const uploaded = await uploadMedia(payload.file, username);
+        fileUrl = uploaded.url;
+        fileType = uploaded.kind;
+      }
+
+      const { data: row, error } = await db
+        .from('messages')
+        .insert({
+          room,
+          sender_id: userId,
+          sender_name: username,
+          content: text || null,
+          file_url: fileUrl,
+          file_type: fileType,
+          is_system: false,
+        })
+        .select('id, room, sender_name, content, file_url, file_type, is_system, created_at')
+        .single();
+
+      if (error) throw error;
+
+      const profile = await getProfile(username);
+      const message = shapeMessage(row, profile);
+
+      io.to(room).emit('chat message', message);
+
+      // Notifica o destinatário mesmo que ele esteja em outra sala.
+      if (room.startsWith('dm:')) {
+        const other = room.slice(3).split('|').find((n) => n !== key);
+        if (other) {
+          io.to('user:' + other).emit('dm notification', {
+            from: username,
+            displayName: message.displayName,
+            avatarUrl: message.avatarUrl,
+            room,
+            preview: fileType ? (fileType === 'image' ? 'Enviou uma imagem' : 'Enviou um vídeo') : text.slice(0, 60),
+          });
+        }
+      }
+
+      if (typeof ack === 'function') ack({ status: 'success', id: row.id });
+    } catch (err) {
+      console.error('[message]', err.message);
+      if (typeof ack === 'function') ack({ status: 'error', message: err.message });
+      socket.emit('chat error', { message: err.message || 'A mensagem não saiu. Tente de novo.' });
+    }
+  });
+
+  // ---------- Apagar histórico da conversa (soft delete, para os dois) ----------
+  socket.on('request clear', async (targetRoom, ack) => {
+    try {
+      if (!canAccessRoom(targetRoom, username) || targetRoom === 'global') {
+        throw new Error('Você não pode limpar essa sala.');
+      }
+      const { error } = await db
+        .from('messages')
+        .update({ deleted_at: new Date().toISOString() })
+        .eq('room', targetRoom)
+        .is('deleted_at', null);
+
+      if (error) throw error;
+
+      io.to(targetRoom).emit('clear messages');
+      if (typeof ack === 'function') ack({ status: 'success' });
+    } catch (err) {
+      console.error('[clear]', err.message);
+      if (typeof ack === 'function') ack({ status: 'error', message: err.message });
+    }
+  });
+
+  // ---------- Digitando ----------
+  socket.on('typing', (isTyping) => {
+    socket.to(room).emit('typing', { username, isTyping: Boolean(isTyping) });
+  });
+
+  socket.on('disconnect', () => {
+    const set = usersOnline.get(key);
+    if (set) {
+      set.delete(socket.id);
+      if (!set.size) {
+        usersOnline.delete(key);
+        io.emit('presence', { username, online: false });
+        db.from('users').update({ last_seen: new Date().toISOString() }).eq('id', userId).then(() => {});
+      }
+    }
+  });
+});
+
+// ============================================================
+process.on('unhandledRejection', (err) => console.error('[unhandled]', err));
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`CyberChat Pro na porta ${PORT} — Supabase conectado`);
+});
